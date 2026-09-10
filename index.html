@@ -14,8 +14,11 @@
         .hidden { display: none; }
         .timer-bar { height: 6px; background-color: #e5e7eb; width: 100%; border-radius: 3px; overflow: hidden; margin-top: 10px; }
         .timer-progress { height: 100%; background-color: #ef4444; width: 100%; transition: width 1s linear; }
-        .option-btn { background: #ffffff; color: #222222; border: 1px solid #d1d5db; text-align: left; font-weight: normal; margin-bottom: 8px; }
-        .option-btn:hover { background: #f3f4f6; }
+        .option-btn { background: #ffffff; color: #222222; border: 1px solid #d1d5db; text-align: left; font-weight: normal; margin-bottom: 8px; transition: background-color 0.2s; }
+        
+        /* Instant Feedback Colors */
+        .correct-choice { background-color: #10b981 !important; color: white !important; border-color: #059669 !important; }
+        .wrong-choice { background-color: #ef4444 !important; color: white !important; border-color: #dc2626 !important; }
     </style>
 </head>
 <body>
@@ -72,11 +75,10 @@
     </div>
 
     <script>
-        // Expand the Telegram Web App window to fill the screen layout automatically
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // CHANGE THIS URL TO YOUR ACTUAL GITHUB JSON FILE PATH
+        // Connected to your live data link
         const DATABASE_URL = "https://github.io";
 
         let masterDatabase = [];
@@ -85,16 +87,14 @@
         let score = 0;
         let timerInterval;
 
-        // Fetch your 2000 questions dynamically from GitHub on application startup
         async function loadDatabase() {
             try {
                 const response = await fetch(DATABASE_URL);
-                if (!response.ok) throw new Error("Database fetch error status");
+                if (!response.ok) throw new Error("Database fetch error");
                 masterDatabase = await response.json();
-                console.log(`Successfully loaded ${masterDatabase.length} questions from database repository.`);
+                console.log(`Loaded ${masterDatabase.length} questions.`);
             } catch (err) {
-                console.error("Failed to sync database arrays:", err);
-                // Fallback local structural sample if database network is unreachable
+                console.error("Database sync failed:", err);
                 masterDatabase = [
                     { Subject: "Physics", Question: "What is the unit of force?", Option_0: "Newton", Option_1: "Joule", Option_2: "Watt", Option_3: "Pascal", Correct_Index: 0 }
                 ];
@@ -102,7 +102,6 @@
         }
         loadDatabase();
 
-        // Fisher-Yates Random Shuffling Engine
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -121,18 +120,14 @@
             const selectedSub = document.getElementById('subject').value;
             const count = parseInt(document.getElementById('q-count').value);
 
-            // Filter questions strictly matching selected parameters from your 2,000 sheet
             let filteredQuestions = masterDatabase.filter(q => q.Subject && q.Subject.toLowerCase() === selectedSub.toLowerCase());
             
             if(filteredQuestions.length === 0) {
-                alert(`No database index items found for Subject: ${selectedSub}. Check your spreadsheet sorting labels!`);
+                alert(`No questions found for Subject: ${selectedSub}. Make sure your Excel column names match perfectly.`);
                 return;
             }
 
-            // Shuffle the matching subjects array to ensure complete random distribution
             let shuffledQuestions = shuffleArray([...filteredQuestions]);
-            
-            // Slice the requested quiz size limit sequence
             activeQuestions = shuffledQuestions.slice(0, count);
 
             currentIndex = 0;
@@ -158,7 +153,6 @@
             const container = document.getElementById('options-container');
             container.innerHTML = '';
             
-            // Dynamically build active clean choices
             const optionsList = [currentQ.Option_0, currentQ.Option_1, currentQ.Option_2, currentQ.Option_3];
             const cleanOptions = optionsList.filter(opt => opt !== undefined && opt !== null && opt !== "");
 
@@ -166,7 +160,7 @@
                 const btn = document.createElement('button');
                 btn.className = 'option-btn';
                 btn.innerText = opt;
-                btn.onclick = () => handleAnswer(idx);
+                btn.onclick = () => handleAnswer(btn, idx);
                 container.appendChild(btn);
             });
 
@@ -186,26 +180,37 @@
                 if(currentLeft <= 0) {
                     clearInterval(timerInterval);
                     currentIndex++;
-                    loadQuestion(); // Force-skips on absolute timeout boundary limit
+                    loadQuestion();
                 }
             }, 1000);
         }
 
-        function handleAnswer(selectedIdx) {
+        function handleAnswer(clickedBtn, selectedIdx) {
             clearInterval(timerInterval);
             const currentQ = activeQuestions[currentIndex];
-            if(selectedIdx === parseInt(currentQ.Correct_Index)) {
+            const correctIdx = parseInt(currentQ.Correct_Index);
+            
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach(btn => btn.disabled = true);
+
+            if(selectedIdx === correctIdx) {
+                clickedBtn.classList.add('correct-choice');
                 score++;
+            } else {
+                clickedBtn.classList.add('wrong-choice');
+                buttons[correctIdx].classList.add('correct-choice');
             }
-            currentIndex++;
-            loadQuestion();
+
+            setTimeout(() => {
+                currentIndex++;
+                loadQuestion();
+            }, 1000);
         }
 
         function endQuiz() {
             clearInterval(timerInterval);
             alert(`🎉 Quiz Finished! You scored ${score}/${activeQuestions.length}`);
             
-            // Send payload results directly back to your telegram interface chat log
             tg.sendData(JSON.stringify({
                 user: tg.initDataUnsafe.user?.first_name || "Student",
                 final_score: score,
@@ -217,3 +222,4 @@
         }
 
         function showLeaderboard() {
+            document.getElementById('setup-screen').classList.add('hidden');
