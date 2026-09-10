@@ -118,6 +118,7 @@
     <div id="join-screen" class="card hidden">
         <h2 class="headline">👋 Welcome to Yantra IAS Daily Quiz</h2>
         <p>Join our Telegram channel to get daily quiz updates, current affairs and study material before you start.</p>
+        <div id="gate-tease" class="explanation-box hidden" style="text-align:left;"></div>
         <button class="success" onclick="openChannel()">📢 Join @yantraias Channel</button>
         <button id="verify-btn" style="margin-top:12px;" onclick="continueAfterJoin()">✅ I've Joined — Continue Now</button>
         <p id="join-status" class="muted" style="margin-top:10px;"></p>
@@ -126,6 +127,8 @@
     <!-- SCREEN 2: QUIZ SETUP -->
     <div id="setup-screen" class="card hidden">
         <h2 id="greeting" class="headline">📝 Configure Your Quiz</h2>
+        <p id="streak-badge" class="muted" style="margin-top:-8px;"></p>
+        <p id="daily-banner" class="muted" style="margin-top:-4px; margin-bottom:14px;"></p>
 
         <label><b>Select Subject:</b></label>
         <select id="subject"></select>
@@ -177,6 +180,7 @@
         <h2 class="headline">🎉 Quiz Complete!</h2>
         <div class="score-big" id="result-score">0/10</div>
         <p class="muted" id="result-percent">0% correct</p>
+        <button class="success" onclick="shareScore()">📤 Share My Score</button>
         <button onclick="startQuiz()">🔁 Play Again</button>
         <button class="success" onclick="showLeaderboard()">🏆 View Leaderboard</button>
         <button class="secondary" onclick="showSetup()">⬅️ Back to Menu</button>
@@ -201,6 +205,7 @@
         const API_URL = "https://yantraias-quiz-verify.yantratelugu.workers.dev/";
         const HISTORY_KEY = "yantraQuizHistory";
         const RESUME_KEY = "yantraQuizResumeState";
+        const STREAK_KEY = "yantraQuizStreak";
         const TRANSLATE_EMAIL = "yantraias@gmail.com";
         const FIRST_GATE_AT = 5;
         const GATE_INTERVAL = 10;
@@ -343,11 +348,22 @@
             const heading = document.querySelector("#join-screen h2");
             const para = document.querySelector("#join-screen p");
             const btn = document.getElementById("verify-btn");
+            const teaseEl = document.getElementById("gate-tease");
             heading.innerText = `🎉 Keep the streak going!`;
             para.innerText = "Join our Telegram channel to keep playing — daily quiz updates and study material included.";
             btn.innerText = "✅ I've Joined — Continue Quiz";
             document.getElementById("join-status").innerText = "";
             btn.disabled = false;
+
+            const nextQ = pendingResumeQuiz ? activeQuestions[currentIndex] : null;
+            if (nextQ) {
+                const preview = nextQ.question.length > 70 ? nextQ.question.slice(0, 70) + "…" : nextQ.question;
+                teaseEl.innerHTML = `<b>🔒 ${escapeHtml(nextQ.subject || "Next question")}</b><br>"${escapeHtml(preview)}"`;
+                teaseEl.classList.remove("hidden");
+            } else {
+                teaseEl.classList.add("hidden");
+            }
+
             screen("join-screen");
         }
 
@@ -387,7 +403,7 @@
                     screen("quiz-screen");
                     loadQuestion();
                 } else {
-                    screen("setup-screen");
+                    showSetup();
                 }
             } catch (err) {
                 document.getElementById("loading-status").innerText =
@@ -430,6 +446,54 @@
             document.getElementById("greeting").innerText = name ? `📝 Hi ${name}, configure your quiz` : "📝 Configure Your Quiz";
         }
 
+        function getStreak() {
+            try {
+                return JSON.parse(localStorage.getItem(STREAK_KEY)) || { count: 0, lastDate: null };
+            } catch (e) {
+                return { count: 0, lastDate: null };
+            }
+        }
+
+        function bumpStreak() {
+            const today = new Date().toISOString().slice(0, 10);
+            const data = getStreak();
+            if (data.lastDate === today) return data;
+            const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+            data.count = data.lastDate === yesterday ? data.count + 1 : 1;
+            data.lastDate = today;
+            try { localStorage.setItem(STREAK_KEY, JSON.stringify(data)); } catch (e) {}
+            return data;
+        }
+
+        function renderStreakBadge() {
+            const streak = getStreak();
+            const el = document.getElementById("streak-badge");
+            el.innerText = streak.count > 0 ? `🔥 ${streak.count}-day streak — keep it going!` : "";
+        }
+
+        function renderDailyBanner() {
+            const el = document.getElementById("daily-banner");
+            const hour = new Date().getHours();
+            if (hour < 17) {
+                el.innerHTML = `⏰ Today's 5-question quiz drops on <a href="#" onclick="openChannel(); return false;" style="color:var(--accent); font-weight:600;">@yantraias</a> at 5 PM!`;
+            } else {
+                el.innerHTML = `✅ Today's quiz is live on <a href="#" onclick="openChannel(); return false;" style="color:var(--accent); font-weight:600;">@yantraias</a> — go check it out!`;
+            }
+        }
+
+        function shareScore() {
+            const total = activeQuestions.length;
+            const percent = total > 0 ? Math.round((score / total) * 100) : 0;
+            const text = `🎯 I scored ${score}/${total} (${percent}%) on Yantra IAS Daily Quiz!\n\nThink you can beat me? Try it and join @yantraias 👇`;
+            const shareUrl = "https://t.me/share/url?url=" + encodeURIComponent("https://t.me/" + CHANNEL_USERNAME)
+                + "&text=" + encodeURIComponent(text);
+            if (tg && tg.openTelegramLink) {
+                tg.openTelegramLink(shareUrl);
+            } else {
+                window.open(shareUrl, "_blank");
+            }
+        }
+
         async function translateText(text, targetLang) {
             if (!text || targetLang === "en") return text;
             const cacheKey = targetLang + "::" + text;
@@ -456,6 +520,8 @@
         }
 
         function showSetup() {
+            renderStreakBadge();
+            renderDailyBanner();
             screen("setup-screen");
         }
 
@@ -645,6 +711,7 @@
             const subjectLabel = document.getElementById("subject").selectedOptions[0].innerText;
 
             saveAttempt(subjectLabel, score, total, percent);
+            bumpStreak();
 
             if (tg && tg.initData) {
                 callApi({ action: "submitScore", initData: tg.initData, score: score }).catch(() => {});
