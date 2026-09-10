@@ -200,6 +200,7 @@
         const DATABASE_URL = "https://raw.githubusercontent.com/yantraias/telegram-quiz-app/main/quizzes.json";
         const API_URL = "https://yantraias-quiz-verify.yantratelugu.workers.dev/";
         const HISTORY_KEY = "yantraQuizHistory";
+        const RESUME_KEY = "yantraQuizResumeState";
         const TRANSLATE_EMAIL = "yantraias@gmail.com";
         const FIRST_GATE_AT = 5;
         const GATE_INTERVAL = 10;
@@ -244,6 +245,27 @@
         let lastGatedIndex = -1;
         const translationCache = {};
 
+        function saveResumeState() {
+            try {
+                localStorage.setItem(RESUME_KEY, JSON.stringify({
+                    activeQuestions, currentIndex, score, currentLanguage, lastGatedIndex,
+                }));
+            } catch (e) {}
+        }
+
+        function clearResumeState() {
+            try { localStorage.removeItem(RESUME_KEY); } catch (e) {}
+        }
+
+        function loadResumeState() {
+            try {
+                const raw = localStorage.getItem(RESUME_KEY);
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
         async function fetchWithTimeout(url, options, timeoutMs) {
             const controller = new AbortController();
             const timer = setTimeout(() => controller.abort(), timeoutMs || FETCH_TIMEOUT_MS);
@@ -269,6 +291,7 @@
         let redirectCountdownTimer = null;
 
         function openChannel() {
+            if (pendingResumeQuiz) saveResumeState();
             const url = `https://t.me/${CHANNEL_USERNAME}`;
             if (tg && tg.openTelegramLink) {
                 tg.openTelegramLink(url);
@@ -294,6 +317,15 @@
                 }
             }, 1000);
         }
+
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+                const joinScreen = document.getElementById("join-screen");
+                if (joinScreen && !joinScreen.classList.contains("hidden")) {
+                    continueAfterJoin();
+                }
+            }
+        });
 
         async function callApi(payload) {
             const resp = await fetchWithTimeout(API_URL, {
@@ -322,6 +354,7 @@
         function continueAfterJoin() {
             clearInterval(redirectCountdownTimer);
             redirectCountdownTimer = null;
+            clearResumeState();
             document.getElementById("join-status").innerText = "";
             if (pendingResumeQuiz) {
                 pendingResumeQuiz = false;
@@ -342,7 +375,20 @@
                 populateSubjects();
                 populateLanguages();
                 greetUser();
-                screen("setup-screen");
+
+                const resumeState = loadResumeState();
+                if (resumeState && Array.isArray(resumeState.activeQuestions) && resumeState.activeQuestions.length > 0) {
+                    clearResumeState();
+                    activeQuestions = resumeState.activeQuestions;
+                    currentIndex = resumeState.currentIndex || 0;
+                    score = resumeState.score || 0;
+                    currentLanguage = resumeState.currentLanguage || "en";
+                    lastGatedIndex = typeof resumeState.lastGatedIndex === "number" ? resumeState.lastGatedIndex : -1;
+                    screen("quiz-screen");
+                    loadQuestion();
+                } else {
+                    screen("setup-screen");
+                }
             } catch (err) {
                 document.getElementById("loading-status").innerText =
                     "Could not load the question bank. Please check your connection and reopen the app.";
