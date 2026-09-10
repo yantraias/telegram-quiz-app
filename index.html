@@ -200,7 +200,10 @@
         const DATABASE_URL = "https://raw.githubusercontent.com/yantraias/telegram-quiz-app/main/quizzes.json";
         const API_URL = "https://yantraias-quiz-verify.yantratelugu.workers.dev/";
         const HISTORY_KEY = "yantraQuizHistory";
+        const VERIFIED_KEY = "yantraQuizVerifiedMember";
         const TRANSLATE_EMAIL = "yantraias@gmail.com";
+        const FREE_QUESTION_LIMIT = 5;
+        const FETCH_TIMEOUT_MS = 12000;
 
         const LANGUAGES = [
             { code: "te", label: "తెలుగు (Telugu)" },
@@ -233,7 +236,26 @@
         let currentLanguage = "en";
         let explanationShown = false;
         let currentLeaderboardTab = "global";
+        let pendingResumeQuiz = false;
         const translationCache = {};
+
+        function isVerifiedCached() {
+            try { return localStorage.getItem(VERIFIED_KEY) === "1"; } catch (e) { return false; }
+        }
+
+        function setVerifiedCached() {
+            try { localStorage.setItem(VERIFIED_KEY, "1"); } catch (e) {}
+        }
+
+        async function fetchWithTimeout(url, options, timeoutMs) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs || FETCH_TIMEOUT_MS);
+            try {
+                return await fetch(url, { ...(options || {}), signal: controller.signal });
+            } finally {
+                clearTimeout(timer);
+            }
+        }
 
         function lowercaseKeys(obj) {
             return Object.keys(obj).reduce((acc, key) => {
@@ -257,7 +279,7 @@
         }
 
         async function callApi(payload) {
-            const resp = await fetch(API_URL, {
+            const resp = await fetchWithTimeout(API_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -267,6 +289,9 @@
         }
 
         async function checkMembership() {
+            if (isVerifiedCached()) {
+                return { checkable: true, isMember: true };
+            }
             if (!tg || !tg.initData) {
                 return { checkable: false };
             }
@@ -275,10 +300,29 @@
                 if (!ok) {
                     return { checkable: true, isMember: false, error: data.error || "Verification failed" };
                 }
+                if (data.isMember) setVerifiedCached();
                 return { checkable: true, isMember: !!data.isMember, status: data.status };
             } catch (err) {
                 return { checkable: true, isMember: false, error: "Could not reach verification server" };
             }
+        }
+
+        function showJoinGate(mode) {
+            const heading = document.querySelector("#join-screen h2");
+            const para = document.querySelector("#join-screen p");
+            const btn = document.getElementById("verify-btn");
+            if (mode === "midquiz") {
+                heading.innerText = "🎉 You've played 5 free questions!";
+                para.innerText = "Join our Telegram channel to keep playing — daily quiz updates and study material included.";
+                btn.innerText = "✅ I've Joined — Continue Quiz";
+            } else {
+                heading.innerText = "👋 Welcome to Yantra IAS Daily Quiz";
+                para.innerText = "Join our Telegram channel to get daily quiz updates, current affairs and study material.";
+                btn.innerText = "✅ I've Joined — Verify & Start";
+            }
+            document.getElementById("join-status").innerText = "";
+            btn.disabled = false;
+            screen("join-screen");
         }
 
         async function continueAfterJoin() {
@@ -297,7 +341,13 @@
 
             if (result.isMember) {
                 statusEl.innerText = "";
-                showSetup();
+                if (pendingResumeQuiz) {
+                    pendingResumeQuiz = false;
+                    screen("quiz-screen");
+                    loadQuestion();
+                } else {
+                    showSetup();
+                }
             } else {
                 statusEl.innerText = "We couldn't confirm you've joined @yantraias yet. Join the channel, then tap this button again.";
                 btn.disabled = false;
@@ -306,25 +356,15 @@
 
         async function loadDatabase() {
             try {
-                const response = await fetch(DATABASE_URL);
+                const response = await fetchWithTimeout(DATABASE_URL, {}, 25000);
                 if (!response.ok) throw new Error("Database fetch error: " + response.status);
                 const rawData = await response.json();
                 masterDatabase = rawData.map(item => lowercaseKeys(item));
 
                 populateSubjects();
                 populateLanguages();
-
-                const membership = await checkMembership();
-                if (membership.checkable && membership.isMember) {
-                    screen("setup-screen");
-                } else {
-                    screen("join-screen");
-                    if (!membership.checkable) {
-                        document.getElementById("join-status").innerText =
-                            "Open this quiz via the @yantraias Telegram bot to verify membership automatically.";
-                    }
-                }
                 greetUser();
+                screen("setup-screen");
             } catch (err) {
                 document.getElementById("loading-status").innerText =
                     "Could not load the question bank. Please check your connection and reopen the app.";
@@ -373,7 +413,7 @@
             try {
                 const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text.slice(0, 480))
                     + "&langpair=en|" + targetLang + "&de=" + encodeURIComponent(TRANSLATE_EMAIL);
-                const resp = await fetch(url);
+                const resp = await fetchWithTimeout(url, {}, 8000);
                 const data = await resp.json();
                 const translated = data && data.responseData && data.responseData.translatedText ? data.responseData.translatedText : text;
                 translationCache[cacheKey] = translated;
@@ -412,6 +452,7 @@
             activeQuestions = shuffleArray([...filteredQuestions]).slice(0, count);
             currentIndex = 0;
             score = 0;
+            pendingResumeQuiz = false;
 
             screen("quiz-screen");
             loadQuestion();
@@ -431,6 +472,15 @@
             if (currentIndex >= activeQuestions.length) {
                 endQuiz();
                 return;
+            }
+
+            if (currentIndex >= FREE_QUESTION_LIMIT && !isVerifiedCached()) {
+                const membership = await checkMembership();
+                if (!membership.isMember) {
+                    pendingResumeQuiz = true;
+                    showJoinGate("midquiz");
+                    return;
+                }
             }
 
             const currentQ = activeQuestions[currentIndex];
