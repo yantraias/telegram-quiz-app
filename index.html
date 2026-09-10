@@ -71,7 +71,8 @@
         <h2>👋 Welcome to Yantra IAS Daily Quiz</h2>
         <p>Join our Telegram channel to get daily quiz updates, current affairs and study material before you start.</p>
         <button class="success" onclick="openChannel()">📢 Join @yantraias Channel</button>
-        <button style="margin-top:12px;" onclick="continueAfterJoin()">✅ I've Joined — Start Quiz</button>
+        <button id="verify-btn" style="margin-top:12px;" onclick="continueAfterJoin()">✅ I've Joined — Verify &amp; Start</button>
+        <p id="join-status" class="muted" style="margin-top:10px;"></p>
     </div>
 
     <!-- SCREEN 2: QUIZ SETUP -->
@@ -138,8 +139,8 @@
     <script>
         const CHANNEL_USERNAME = "yantraias";
         const DATABASE_URL = "https://raw.githubusercontent.com/yantraias/telegram-quiz-app/main/quizzes.json";
+        const VERIFY_URL = "https://yantraias-quiz-verify.yantratelugu.workers.dev/";
         const HISTORY_KEY = "yantraQuizHistory";
-        const JOINED_KEY = "yantraQuizJoinedChannel";
 
         const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
         if (tg) {
@@ -175,9 +176,47 @@
             }
         }
 
-        function continueAfterJoin() {
-            localStorage.setItem(JOINED_KEY, "1");
-            showSetup();
+        async function checkMembership() {
+            if (!tg || !tg.initData) {
+                return { checkable: false };
+            }
+            try {
+                const resp = await fetch(VERIFY_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ initData: tg.initData }),
+                });
+                const data = await resp.json();
+                if (!resp.ok) {
+                    return { checkable: true, isMember: false, error: data.error || "Verification failed" };
+                }
+                return { checkable: true, isMember: !!data.isMember, status: data.status };
+            } catch (err) {
+                return { checkable: true, isMember: false, error: "Could not reach verification server" };
+            }
+        }
+
+        async function continueAfterJoin() {
+            const btn = document.getElementById("verify-btn");
+            const statusEl = document.getElementById("join-status");
+            btn.disabled = true;
+            statusEl.innerText = "Verifying your membership…";
+
+            const result = await checkMembership();
+
+            if (!result.checkable) {
+                statusEl.innerText = "Please open this quiz from inside Telegram (via the @yantraias bot) so we can verify your membership.";
+                btn.disabled = false;
+                return;
+            }
+
+            if (result.isMember) {
+                statusEl.innerText = "";
+                showSetup();
+            } else {
+                statusEl.innerText = "We couldn't confirm you've joined @yantraias yet. Join the channel, then tap this button again.";
+                btn.disabled = false;
+            }
         }
 
         async function loadDatabase() {
@@ -189,9 +228,16 @@
 
                 populateSubjects();
 
-                let joined = false;
-                try { joined = localStorage.getItem(JOINED_KEY) === "1"; } catch (e) {}
-                screen(joined ? "setup-screen" : "join-screen");
+                const membership = await checkMembership();
+                if (membership.checkable && membership.isMember) {
+                    screen("setup-screen");
+                } else {
+                    screen("join-screen");
+                    if (!membership.checkable) {
+                        document.getElementById("join-status").innerText =
+                            "Open this quiz via the @yantraias Telegram bot to verify membership automatically.";
+                    }
+                }
                 greetUser();
             } catch (err) {
                 document.getElementById("loading-status").innerText =
