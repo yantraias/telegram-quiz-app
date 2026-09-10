@@ -15,8 +15,6 @@
         .timer-bar { height: 6px; background-color: #e5e7eb; width: 100%; border-radius: 3px; overflow: hidden; margin-top: 10px; }
         .timer-progress { height: 100%; background-color: #ef4444; width: 100%; transition: width 1s linear; }
         .option-btn { background: #ffffff; color: #222222; border: 1px solid #d1d5db; text-align: left; font-weight: normal; margin-bottom: 8px; transition: background-color 0.2s; }
-        
-        /* Instant Feedback Colors */
         .correct-choice { background-color: #10b981 !important; color: white !important; border-color: #059669 !important; }
         .wrong-choice { background-color: #ef4444 !important; color: white !important; border-color: #dc2626 !important; }
     </style>
@@ -78,7 +76,6 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Connected to your live data link
         const DATABASE_URL = "https://github.io";
 
         let masterDatabase = [];
@@ -87,17 +84,26 @@
         let score = 0;
         let timerInterval;
 
+        // Helper to convert object keys to lowercase uniformly
+        function lowercaseKeys(obj) {
+            return Object.keys(obj).reduce((acc, key) => {
+                acc[key.toLowerCase().trim()] = obj[key];
+                return acc;
+            }, {});
+        }
+
         async function loadDatabase() {
             try {
                 const response = await fetch(DATABASE_URL);
                 if (!response.ok) throw new Error("Database fetch error");
-                masterDatabase = await response.json();
-                console.log(`Loaded ${masterDatabase.length} questions.`);
+                const rawData = await response.json();
+                
+                // Uniformly normalize all data keys to lower case to eliminate column formatting bugs
+                masterDatabase = rawData.map(item => lowercaseKeys(item));
+                console.log(`Loaded ${masterDatabase.length} questions successfully.`);
             } catch (err) {
                 console.error("Database sync failed:", err);
-                masterDatabase = [
-                    { Subject: "Physics", Question: "What is the unit of force?", Option_0: "Newton", Option_1: "Joule", Option_2: "Watt", Option_3: "Pascal", Correct_Index: 0 }
-                ];
+                alert("Could not load your questions file. Double check if questions.json exists on your GitHub repository page!");
             }
         }
         loadDatabase();
@@ -117,13 +123,15 @@
         }
 
         function startQuiz() {
-            const selectedSub = document.getElementById('subject').value;
+            const selectedSub = document.getElementById('subject').value.toLowerCase().trim();
             const count = parseInt(document.getElementById('q-count').value);
 
-            let filteredQuestions = masterDatabase.filter(q => q.Subject && q.Subject.toLowerCase() === selectedSub.toLowerCase());
+            // Filter questions safely matching the chosen subject string
+            let filteredQuestions = masterDatabase.filter(q => q.subject && q.subject.toString().toLowerCase().trim() === selectedSub);
             
             if(filteredQuestions.length === 0) {
-                alert(`No questions found for Subject: ${selectedSub}. Make sure your Excel column names match perfectly.`);
+                // Inform user if name arrays do not match
+                alert(`No questions found matching the subject: "${selectedSub}". Please check your Excel sheet columns!`);
                 return;
             }
 
@@ -148,12 +156,18 @@
             const currentQ = activeQuestions[currentIndex];
             document.getElementById('question-number').innerText = `Question ${currentIndex + 1}/${activeQuestions.length}`;
             document.getElementById('score-counter').innerText = `Score: ${score}`;
-            document.getElementById('question-text').innerText = currentQ.Question;
+            document.getElementById('question-text').innerText = currentQ.question;
 
             const container = document.getElementById('options-container');
             container.innerHTML = '';
             
-            const optionsList = [currentQ.Option_0, currentQ.Option_1, currentQ.Option_2, currentQ.Option_3];
+            // Map common optional index variations cleanly
+            const optionsList = [
+                currentQ.option_0 || currentQ.option0, 
+                currentQ.option_1 || currentQ.option1, 
+                currentQ.option_2 || currentQ.option2, 
+                currentQ.option_3 || currentQ.option3
+            ];
             const cleanOptions = optionsList.filter(opt => opt !== undefined && opt !== null && opt !== "");
 
             cleanOptions.forEach((opt, idx) => {
@@ -188,7 +202,7 @@
         function handleAnswer(clickedBtn, selectedIdx) {
             clearInterval(timerInterval);
             const currentQ = activeQuestions[currentIndex];
-            const correctIdx = parseInt(currentQ.Correct_Index);
+            const correctIdx = parseInt(currentQ.correct_index || currentQ.correct_idx || currentQ.correctindex);
             
             const buttons = document.querySelectorAll('.option-btn');
             buttons.forEach(btn => btn.disabled = true);
@@ -198,28 +212,9 @@
                 score++;
             } else {
                 clickedBtn.classList.add('wrong-choice');
-                buttons[correctIdx].classList.add('correct-choice');
+                if(buttons[correctIdx]) {
+                    buttons[correctIdx].classList.add('correct-choice');
+                }
             }
 
             setTimeout(() => {
-                currentIndex++;
-                loadQuestion();
-            }, 1000);
-        }
-
-        function endQuiz() {
-            clearInterval(timerInterval);
-            alert(`🎉 Quiz Finished! You scored ${score}/${activeQuestions.length}`);
-            
-            tg.sendData(JSON.stringify({
-                user: tg.initDataUnsafe.user?.first_name || "Student",
-                final_score: score,
-                total_questions: activeQuestions.length,
-                subject: document.getElementById('subject').value
-            }));
-            
-            showSetup();
-        }
-
-        function showLeaderboard() {
-            document.getElementById('setup-screen').classList.add('hidden');
