@@ -3,40 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Master Mini App</title>
-    <!-- Include the official Telegram Web App script -->
-    <script src="https://telegram.org"></script>
+    <title>Yantra IAS Daily Quiz</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--tg-theme-bg-color, #ffffff); color: var(--tg-theme-text-color, #222222); padding: 20px; margin: 0; }
-        .card { background: var(--tg-theme-secondary-bg-color, #f4f4f5); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        select, button { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
-        button { background-color: var(--tg-theme-button-color, #2481cc); color: var(--tg-theme-button-text-color, #ffffff); border: none; font-weight: bold; cursor: pointer; }
-        .hidden { display: none; }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #222222);
+            padding: 16px;
+            margin: 0;
+        }
+        .card {
+            background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+            padding: 18px;
+            border-radius: 14px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        select, button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:active { opacity: 0.85; }
+        button.secondary { background-color: #6b7280; }
+        button.success { background-color: #10b981; }
+        .hidden { display: none !important; }
+        .center { text-align: center; }
+        .muted { color: #6b7280; font-size: 14px; }
         .timer-bar { height: 6px; background-color: #e5e7eb; width: 100%; border-radius: 3px; overflow: hidden; margin-top: 10px; }
         .timer-progress { height: 100%; background-color: #ef4444; width: 100%; transition: width 1s linear; }
         .option-btn { background: #ffffff; color: #222222; border: 1px solid #d1d5db; text-align: left; font-weight: normal; margin-bottom: 8px; transition: background-color 0.2s; }
         .correct-choice { background-color: #10b981 !important; color: white !important; border-color: #059669 !important; }
         .wrong-choice { background-color: #ef4444 !important; color: white !important; border-color: #dc2626 !important; }
+        .explanation-box { background: #eef2ff; border-left: 4px solid #4f46e5; padding: 12px; border-radius: 8px; margin-top: 12px; font-size: 14px; line-height: 1.5; white-space: pre-line; }
+        .badge { display: inline-block; background: #4f46e5; color: white; font-size: 12px; font-weight: bold; padding: 3px 10px; border-radius: 999px; margin-bottom: 8px; }
+        .row { display: flex; justify-content: space-between; align-items: center; }
+        .lb-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+        .lb-item:last-child { border-bottom: none; }
+        .lb-rank { font-weight: bold; width: 28px; }
+        .score-big { font-size: 42px; font-weight: bold; margin: 6px 0; }
+        .channel-link { display: block; text-align: center; margin-top: 14px; font-size: 14px; color: var(--tg-theme-link-color, #2481cc); text-decoration: none; }
     </style>
 </head>
 <body>
 
-    <!-- SCREEN 1: QUIZ SETUP -->
-    <div id="setup-screen" class="card">
-        <h2>📝 Configure Your Quiz</h2>
-        
+    <!-- SCREEN 0: LOADING -->
+    <div id="loading-screen" class="card center">
+        <h2>⏳ Loading questions…</h2>
+        <p class="muted" id="loading-status">Fetching the question bank, one moment.</p>
+    </div>
+
+    <!-- SCREEN 1: JOIN CHANNEL GATE -->
+    <div id="join-screen" class="card hidden">
+        <h2>👋 Welcome to Yantra IAS Daily Quiz</h2>
+        <p>Join our Telegram channel to get daily quiz updates, current affairs and study material before you start.</p>
+        <button class="success" onclick="openChannel()">📢 Join @yantraias Channel</button>
+        <button style="margin-top:12px;" onclick="continueAfterJoin()">✅ I've Joined — Start Quiz</button>
+    </div>
+
+    <!-- SCREEN 2: QUIZ SETUP -->
+    <div id="setup-screen" class="card hidden">
+        <h2 id="greeting">📝 Configure Your Quiz</h2>
+
         <label><b>Select Subject:</b></label>
-        <select id="subject">
-            <option value="Physics">Physics</option>
-            <option value="Chemistry">Chemistry</option>
-            <option value="Mathematics">Mathematics</option>
-            <option value="English">English</option>
-        </select>
+        <select id="subject"></select>
 
         <label style="display:block; margin-top:15px;"><b>Number of Questions:</b></label>
         <select id="q-count">
             <option value="5">5 Questions</option>
-            <option value="10">10 Questions</option>
+            <option value="10" selected>10 Questions</option>
             <option value="20">20 Questions</option>
             <option value="50">50 Questions</option>
         </select>
@@ -44,47 +92,68 @@
         <label style="display:block; margin-top:15px;"><b>Timer Per Question:</b></label>
         <select id="timer-setting">
             <option value="15">15 Seconds</option>
-            <option value="30">30 Seconds</option>
+            <option value="30" selected>30 Seconds</option>
             <option value="60">60 Seconds</option>
         </select>
 
         <button style="margin-top:20px;" onclick="startQuiz()">🚀 Start Quiz</button>
-        <button style="margin-top:10px; background-color:#10b981;" onclick="showLeaderboard()">🏆 View Leaderboard</button>
+        <button class="success" onclick="showLeaderboard()">🏆 View Leaderboard</button>
+        <a class="channel-link" href="#" onclick="openChannel(); return false;">📢 Visit @yantraias channel</a>
     </div>
 
-    <!-- SCREEN 2: ACTIVE QUIZ PLAYER -->
+    <!-- SCREEN 3: ACTIVE QUIZ PLAYER -->
     <div id="quiz-screen" class="hidden">
         <div class="card">
-            <div style="display:flex; justify-content:space-between;">
+            <div class="row">
                 <span id="question-number">Question 1/10</span>
                 <span id="score-counter">Score: 0</span>
             </div>
             <div class="timer-bar"><div id="progress" class="timer-progress"></div></div>
-            <p id="question-text" style="font-size: 18px; font-weight: bold; margin-top: 15px;"></p>
+            <span class="badge" id="question-subject-badge"></span>
+            <p id="question-text" style="font-size: 18px; font-weight: bold; margin-top: 8px;"></p>
         </div>
         <div id="options-container"></div>
+        <div id="explanation-container"></div>
+        <button id="next-btn" class="hidden" onclick="nextQuestion()">Next ➡️</button>
     </div>
 
-    <!-- SCREEN 3: LEADERBOARD VIEW -->
+    <!-- SCREEN 4: RESULT -->
+    <div id="result-screen" class="card hidden center">
+        <h2>🎉 Quiz Complete!</h2>
+        <div class="score-big" id="result-score">0/10</div>
+        <p class="muted" id="result-percent">0% correct</p>
+        <button onclick="startQuiz()">🔁 Play Again</button>
+        <button class="success" onclick="showLeaderboard()">🏆 View Leaderboard</button>
+        <button class="secondary" onclick="showSetup()">⬅️ Back to Menu</button>
+    </div>
+
+    <!-- SCREEN 5: LEADERBOARD -->
     <div id="leaderboard-screen" class="card hidden">
-        <h2>🏆 Global Leaderboard</h2>
-        <div id="leaderboard-list">Loading standings...</div>
-        <button style="margin-top:20px; background-color:#6b7280;" onclick="showSetup()">⬅️ Back to Menu</button>
+        <h2>🏆 Your Best Scores</h2>
+        <p class="muted">Saved on this device only — play regularly to climb your own leaderboard!</p>
+        <div id="leaderboard-list"></div>
+        <button style="margin-top:20px;" class="secondary" onclick="showSetup()">⬅️ Back to Menu</button>
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
+        const CHANNEL_USERNAME = "yantraias";
+        const DATABASE_URL = "https://raw.githubusercontent.com/yantraias/telegram-quiz-app/main/quizzes.json";
+        const HISTORY_KEY = "yantraQuizHistory";
+        const JOINED_KEY = "yantraQuizJoinedChannel";
 
-        const DATABASE_URL = "https://github.io";
+        const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+        if (tg) {
+            tg.ready();
+            tg.expand();
+        }
 
         let masterDatabase = [];
         let activeQuestions = [];
         let currentIndex = 0;
         let score = 0;
         let timerInterval;
+        let answered = false;
 
-        // Helper to convert object keys to lowercase uniformly
         function lowercaseKeys(obj) {
             return Object.keys(obj).reduce((acc, key) => {
                 acc[key.toLowerCase().trim()] = obj[key];
@@ -92,21 +161,66 @@
             }, {});
         }
 
+        function screen(id) {
+            ["loading-screen", "join-screen", "setup-screen", "quiz-screen", "result-screen", "leaderboard-screen"]
+                .forEach(s => document.getElementById(s).classList.toggle("hidden", s !== id));
+        }
+
+        function openChannel() {
+            const url = `https://t.me/${CHANNEL_USERNAME}`;
+            if (tg && tg.openTelegramLink) {
+                tg.openTelegramLink(url);
+            } else {
+                window.open(url, "_blank");
+            }
+        }
+
+        function continueAfterJoin() {
+            localStorage.setItem(JOINED_KEY, "1");
+            showSetup();
+        }
+
         async function loadDatabase() {
             try {
                 const response = await fetch(DATABASE_URL);
-                if (!response.ok) throw new Error("Database fetch error");
+                if (!response.ok) throw new Error("Database fetch error: " + response.status);
                 const rawData = await response.json();
-                
-                // Uniformly normalize all data keys to lower case to eliminate column formatting bugs
                 masterDatabase = rawData.map(item => lowercaseKeys(item));
-                console.log(`Loaded ${masterDatabase.length} questions successfully.`);
+
+                populateSubjects();
+
+                let joined = false;
+                try { joined = localStorage.getItem(JOINED_KEY) === "1"; } catch (e) {}
+                screen(joined ? "setup-screen" : "join-screen");
+                greetUser();
             } catch (err) {
+                document.getElementById("loading-status").innerText =
+                    "Could not load the question bank. Please check your connection and reopen the app.";
                 console.error("Database sync failed:", err);
-                alert("Could not load your questions file. Double check if questions.json exists on your GitHub repository page!");
             }
         }
         loadDatabase();
+
+        function populateSubjects() {
+            const subjects = Array.from(new Set(masterDatabase.map(q => (q.subject || "").toString().trim()).filter(Boolean))).sort();
+            const select = document.getElementById("subject");
+            select.innerHTML = "";
+            const allOpt = document.createElement("option");
+            allOpt.value = "__all__";
+            allOpt.innerText = "All Subjects (Mixed)";
+            select.appendChild(allOpt);
+            subjects.forEach(s => {
+                const opt = document.createElement("option");
+                opt.value = s;
+                opt.innerText = s;
+                select.appendChild(opt);
+            });
+        }
+
+        function greetUser() {
+            const name = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user.first_name : null;
+            document.getElementById("greeting").innerText = name ? `📝 Hi ${name}, configure your quiz` : "📝 Configure Your Quiz";
+        }
 
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -117,62 +231,61 @@
         }
 
         function showSetup() {
-            document.getElementById('setup-screen').classList.remove('hidden');
-            document.getElementById('quiz-screen').classList.add('hidden');
-            document.getElementById('leaderboard-screen').classList.add('hidden');
+            screen("setup-screen");
         }
 
         function startQuiz() {
-            const selectedSub = document.getElementById('subject').value.toLowerCase().trim();
-            const count = parseInt(document.getElementById('q-count').value);
+            const selectedSub = document.getElementById("subject").value;
+            const count = parseInt(document.getElementById("q-count").value, 10);
 
-            // Filter questions safely matching the chosen subject string
-            let filteredQuestions = masterDatabase.filter(q => q.subject && q.subject.toString().toLowerCase().trim() === selectedSub);
-            
-            if(filteredQuestions.length === 0) {
-                // Inform user if name arrays do not match
-                alert(`No questions found matching the subject: "${selectedSub}". Please check your Excel sheet columns!`);
+            let filteredQuestions = selectedSub === "__all__"
+                ? masterDatabase
+                : masterDatabase.filter(q => q.subject && q.subject.toString().trim() === selectedSub);
+
+            if (filteredQuestions.length === 0) {
+                alert(`No questions found for "${selectedSub}".`);
                 return;
             }
 
-            let shuffledQuestions = shuffleArray([...filteredQuestions]);
-            activeQuestions = shuffledQuestions.slice(0, count);
-
+            activeQuestions = shuffleArray([...filteredQuestions]).slice(0, count);
             currentIndex = 0;
             score = 0;
-            
-            document.getElementById('setup-screen').classList.add('hidden');
-            document.getElementById('quiz-screen').classList.remove('hidden');
+
+            screen("quiz-screen");
             loadQuestion();
         }
 
         function loadQuestion() {
             clearInterval(timerInterval);
-            if(currentIndex >= activeQuestions.length) {
+            answered = false;
+            document.getElementById("next-btn").classList.add("hidden");
+            document.getElementById("explanation-container").innerHTML = "";
+
+            if (currentIndex >= activeQuestions.length) {
                 endQuiz();
                 return;
             }
 
             const currentQ = activeQuestions[currentIndex];
-            document.getElementById('question-number').innerText = `Question ${currentIndex + 1}/${activeQuestions.length}`;
-            document.getElementById('score-counter').innerText = `Score: ${score}`;
-            document.getElementById('question-text').innerText = currentQ.question;
+            document.getElementById("question-number").innerText = `Question ${currentIndex + 1}/${activeQuestions.length}`;
+            document.getElementById("score-counter").innerText = `Score: ${score}`;
+            document.getElementById("question-subject-badge").innerText = currentQ.subject || "";
+            document.getElementById("question-text").innerText = currentQ.question;
 
-            const container = document.getElementById('options-container');
-            container.innerHTML = '';
-            
-            // Map common optional index variations cleanly
+            const container = document.getElementById("options-container");
+            container.innerHTML = "";
+
             const optionsList = [
-                currentQ.option_0 || currentQ.option0, 
-                currentQ.option_1 || currentQ.option1, 
-                currentQ.option_2 || currentQ.option2, 
-                currentQ.option_3 || currentQ.option3
+                currentQ.option_0 !== undefined ? currentQ.option_0 : currentQ.option0,
+                currentQ.option_1 !== undefined ? currentQ.option_1 : currentQ.option1,
+                currentQ.option_2 !== undefined ? currentQ.option_2 : currentQ.option2,
+                currentQ.option_3 !== undefined ? currentQ.option_3 : currentQ.option3
             ];
             const cleanOptions = optionsList.filter(opt => opt !== undefined && opt !== null && opt !== "");
 
             cleanOptions.forEach((opt, idx) => {
-                const btn = document.createElement('button');
-                btn.className = 'option-btn';
+                const btn = document.createElement("button");
+                btn.className = "option-btn";
                 btn.innerText = opt;
                 btn.onclick = () => handleAnswer(btn, idx);
                 container.appendChild(btn);
@@ -182,39 +295,112 @@
         }
 
         function startTimer() {
-            const maxTime = parseInt(document.getElementById('timer-setting').value);
+            const maxTime = parseInt(document.getElementById("timer-setting").value, 10);
             let currentLeft = maxTime;
-            const progressBar = document.getElementById('progress');
-            progressBar.style.width = '100%';
+            const progressBar = document.getElementById("progress");
+            progressBar.style.width = "100%";
 
             timerInterval = setInterval(() => {
                 currentLeft--;
                 progressBar.style.width = `${(currentLeft / maxTime) * 100}%`;
 
-                if(currentLeft <= 0) {
+                if (currentLeft <= 0) {
                     clearInterval(timerInterval);
-                    currentIndex++;
-                    loadQuestion();
+                    if (!answered) handleAnswer(null, -1);
                 }
             }, 1000);
         }
 
         function handleAnswer(clickedBtn, selectedIdx) {
+            if (answered) return;
+            answered = true;
             clearInterval(timerInterval);
+
             const currentQ = activeQuestions[currentIndex];
-            const correctIdx = parseInt(currentQ.correct_index || currentQ.correct_idx || currentQ.correctindex);
-            
-            const buttons = document.querySelectorAll('.option-btn');
+            const correctIdxRaw = currentQ.correct_index !== undefined ? currentQ.correct_index
+                : (currentQ.correct_idx !== undefined ? currentQ.correct_idx : currentQ.correctindex);
+            const correctIdx = parseInt(correctIdxRaw, 10);
+
+            const buttons = document.querySelectorAll(".option-btn");
             buttons.forEach(btn => btn.disabled = true);
 
-            if(selectedIdx === correctIdx) {
-                clickedBtn.classList.add('correct-choice');
+            if (selectedIdx === correctIdx) {
+                if (clickedBtn) clickedBtn.classList.add("correct-choice");
                 score++;
+                document.getElementById("score-counter").innerText = `Score: ${score}`;
             } else {
-                clickedBtn.classList.add('wrong-choice');
-                if(buttons[correctIdx]) {
-                    buttons[correctIdx].classList.add('correct-choice');
-                }
+                if (clickedBtn) clickedBtn.classList.add("wrong-choice");
+                if (buttons[correctIdx]) buttons[correctIdx].classList.add("correct-choice");
             }
 
-            setTimeout(() => {
+            if (currentQ.explanation) {
+                const box = document.createElement("div");
+                box.className = "explanation-box";
+                box.innerText = currentQ.explanation;
+                document.getElementById("explanation-container").appendChild(box);
+            }
+
+            document.getElementById("next-btn").classList.remove("hidden");
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            loadQuestion();
+        }
+
+        function endQuiz() {
+            const total = activeQuestions.length;
+            const percent = total > 0 ? Math.round((score / total) * 100) : 0;
+
+            saveAttempt(document.getElementById("subject").selectedOptions[0].innerText, score, total, percent);
+
+            document.getElementById("result-score").innerText = `${score}/${total}`;
+            document.getElementById("result-percent").innerText = `${percent}% correct`;
+            screen("result-screen");
+
+            if (tg && tg.HapticFeedback) {
+                tg.HapticFeedback.notificationOccurred(percent >= 50 ? "success" : "warning");
+            }
+        }
+
+        function loadHistory() {
+            try {
+                return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveAttempt(subject, score, total, percent) {
+            const history = loadHistory();
+            history.push({ date: new Date().toISOString(), subject, score, total, percent });
+            try {
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(-100)));
+            } catch (e) {}
+        }
+
+        function showLeaderboard() {
+            const history = loadHistory();
+            const list = document.getElementById("leaderboard-list");
+
+            if (history.length === 0) {
+                list.innerHTML = '<p class="muted">No attempts yet — play a quiz to appear here!</p>';
+                screen("leaderboard-screen");
+                return;
+            }
+
+            const top = [...history].sort((a, b) => b.percent - a.percent || b.score - a.score).slice(0, 10);
+            const totalAttempts = history.length;
+            const avgPercent = Math.round(history.reduce((sum, h) => sum + h.percent, 0) / totalAttempts);
+
+            let html = `<p class="muted">${totalAttempts} quiz(zes) played · ${avgPercent}% average</p>`;
+            top.forEach((h, i) => {
+                const date = new Date(h.date).toLocaleDateString();
+                html += `<div class="lb-item"><span><span class="lb-rank">#${i + 1}</span> ${h.subject} — ${h.score}/${h.total}</span><span>${h.percent}% · ${date}</span></div>`;
+            });
+            list.innerHTML = html;
+            screen("leaderboard-screen");
+        }
+    </script>
+</body>
+</html>
