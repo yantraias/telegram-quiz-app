@@ -129,6 +129,11 @@
         <h2 id="greeting" class="headline">📝 Configure Your Quiz</h2>
         <p id="streak-badge" class="muted" style="margin-top:-8px;"></p>
         <p id="daily-banner" class="muted" style="margin-top:-4px; margin-bottom:14px;"></p>
+        <div id="telegram-launch-nudge" class="explanation-box hidden" style="text-align:left; margin-top:0; margin-bottom:14px;">
+            <b>⚠️ Your scores aren't being saved!</b><br>
+            You're playing outside Telegram, so your streak and leaderboard rank won't be recorded.
+            <button style="margin-top:10px;" onclick="openViaBotApp()">🚀 Open via Telegram Bot</button>
+        </div>
 
         <label><b>Select Subject:</b></label>
         <select id="subject"></select>
@@ -181,6 +186,10 @@
         <h2 class="headline">🎉 Quiz Complete!</h2>
         <div class="score-big" id="result-score">0/10</div>
         <p class="muted" id="result-percent">0% correct</p>
+        <div id="result-telegram-nudge" class="explanation-box hidden" style="text-align:left;">
+            <b>⚠️ This score wasn't saved.</b> You're playing outside Telegram — open via our bot next time so your score, streak and leaderboard rank get recorded.
+            <button style="margin-top:10px;" onclick="openViaBotApp()">🚀 Open via Telegram Bot</button>
+        </div>
         <button class="success" onclick="shareScore()">📤 Share My Score</button>
         <button onclick="startQuiz()">🔁 Play Again</button>
         <button class="success" onclick="showLeaderboard()">🏆 View Leaderboard</button>
@@ -297,6 +306,21 @@
         }
 
         let redirectCountdownTimer = null;
+
+        function openViaBotApp() {
+            const url = `https://t.me/${BOT_USERNAME}?startapp=quiz`;
+            if (tg && tg.openTelegramLink) {
+                tg.openTelegramLink(url);
+            } else {
+                window.location.href = url;
+            }
+        }
+
+        function renderTelegramLaunchNudge() {
+            const outsideTelegram = !tg || !tg.initData;
+            document.getElementById("telegram-launch-nudge").classList.toggle("hidden", !outsideTelegram);
+            document.getElementById("result-telegram-nudge").classList.toggle("hidden", !outsideTelegram);
+        }
 
         function openChannel() {
             if (pendingResumeQuiz) saveResumeState();
@@ -563,6 +587,7 @@
             renderStreakBadge();
             renderDailyBanner();
             renderInviteButton();
+            renderTelegramLaunchNudge();
             screen("setup-screen");
         }
 
@@ -760,6 +785,7 @@
 
             document.getElementById("result-score").innerText = `${score}/${total}`;
             document.getElementById("result-percent").innerText = `${percent}% correct`;
+            renderTelegramLaunchNudge();
             screen("result-screen");
 
             if (tg && tg.HapticFeedback) {
