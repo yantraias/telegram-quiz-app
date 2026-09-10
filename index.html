@@ -200,10 +200,14 @@
         const DATABASE_URL = "https://raw.githubusercontent.com/yantraias/telegram-quiz-app/main/quizzes.json";
         const API_URL = "https://yantraias-quiz-verify.yantratelugu.workers.dev/";
         const HISTORY_KEY = "yantraQuizHistory";
-        const VERIFIED_KEY = "yantraQuizVerifiedMember";
         const TRANSLATE_EMAIL = "yantraias@gmail.com";
-        const FREE_QUESTION_LIMIT = 5;
+        const FIRST_GATE_AT = 5;
+        const GATE_INTERVAL = 10;
         const FETCH_TIMEOUT_MS = 12000;
+
+        function isGateQuestion(index) {
+            return index >= FIRST_GATE_AT && (index - FIRST_GATE_AT) % GATE_INTERVAL === 0;
+        }
 
         const LANGUAGES = [
             { code: "te", label: "తెలుగు (Telugu)" },
@@ -237,15 +241,8 @@
         let explanationShown = false;
         let currentLeaderboardTab = "global";
         let pendingResumeQuiz = false;
+        let lastGatedIndex = -1;
         const translationCache = {};
-
-        function isVerifiedCached() {
-            try { return localStorage.getItem(VERIFIED_KEY) === "1"; } catch (e) { return false; }
-        }
-
-        function setVerifiedCached() {
-            try { localStorage.setItem(VERIFIED_KEY, "1"); } catch (e) {}
-        }
 
         async function fetchWithTimeout(url, options, timeoutMs) {
             const controller = new AbortController();
@@ -288,69 +285,26 @@
             return { ok: resp.ok, data };
         }
 
-        async function checkMembership() {
-            if (isVerifiedCached()) {
-                return { checkable: true, isMember: true };
-            }
-            if (!tg || !tg.initData) {
-                return { checkable: false };
-            }
-            try {
-                const { ok, data } = await callApi({ action: "verify", initData: tg.initData });
-                if (!ok) {
-                    return { checkable: true, isMember: false, error: data.error || "Verification failed" };
-                }
-                if (data.isMember) setVerifiedCached();
-                return { checkable: true, isMember: !!data.isMember, status: data.status };
-            } catch (err) {
-                return { checkable: true, isMember: false, error: "Could not reach verification server" };
-            }
-        }
-
-        function showJoinGate(mode) {
+        function showJoinGate() {
             const heading = document.querySelector("#join-screen h2");
             const para = document.querySelector("#join-screen p");
             const btn = document.getElementById("verify-btn");
-            if (mode === "midquiz") {
-                heading.innerText = "🎉 You've played 5 free questions!";
-                para.innerText = "Join our Telegram channel to keep playing — daily quiz updates and study material included.";
-                btn.innerText = "✅ I've Joined — Continue Quiz";
-            } else {
-                heading.innerText = "👋 Welcome to Yantra IAS Daily Quiz";
-                para.innerText = "Join our Telegram channel to get daily quiz updates, current affairs and study material.";
-                btn.innerText = "✅ I've Joined — Verify & Start";
-            }
+            heading.innerText = `🎉 Keep the streak going!`;
+            para.innerText = "Join our Telegram channel to keep playing — daily quiz updates and study material included.";
+            btn.innerText = "✅ I've Joined — Continue Quiz";
             document.getElementById("join-status").innerText = "";
             btn.disabled = false;
             screen("join-screen");
         }
 
-        async function continueAfterJoin() {
-            const btn = document.getElementById("verify-btn");
-            const statusEl = document.getElementById("join-status");
-            btn.disabled = true;
-            statusEl.innerText = "Verifying your membership…";
-
-            const result = await checkMembership();
-
-            if (!result.checkable) {
-                statusEl.innerText = "Please open this quiz from inside Telegram (via the @yantraias bot) so we can verify your membership.";
-                btn.disabled = false;
-                return;
-            }
-
-            if (result.isMember) {
-                statusEl.innerText = "";
-                if (pendingResumeQuiz) {
-                    pendingResumeQuiz = false;
-                    screen("quiz-screen");
-                    loadQuestion();
-                } else {
-                    showSetup();
-                }
+        function continueAfterJoin() {
+            document.getElementById("join-status").innerText = "";
+            if (pendingResumeQuiz) {
+                pendingResumeQuiz = false;
+                screen("quiz-screen");
+                loadQuestion();
             } else {
-                statusEl.innerText = "We couldn't confirm you've joined @yantraias yet. Join the channel, then tap this button again.";
-                btn.disabled = false;
+                showSetup();
             }
         }
 
@@ -453,6 +407,7 @@
             currentIndex = 0;
             score = 0;
             pendingResumeQuiz = false;
+            lastGatedIndex = -1;
 
             screen("quiz-screen");
             loadQuestion();
@@ -474,13 +429,11 @@
                 return;
             }
 
-            if (currentIndex >= FREE_QUESTION_LIMIT && !isVerifiedCached()) {
-                const membership = await checkMembership();
-                if (!membership.isMember) {
-                    pendingResumeQuiz = true;
-                    showJoinGate("midquiz");
-                    return;
-                }
+            if (isGateQuestion(currentIndex) && currentIndex !== lastGatedIndex) {
+                lastGatedIndex = currentIndex;
+                pendingResumeQuiz = true;
+                showJoinGate();
+                return;
             }
 
             const currentQ = activeQuestions[currentIndex];
