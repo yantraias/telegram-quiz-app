@@ -119,7 +119,7 @@
         <h2 class="headline">👋 Welcome to Yantra IAS Daily Quiz</h2>
         <p>Join our Telegram channel to get daily quiz updates, current affairs and study material before you start.</p>
         <button class="success" onclick="openChannel()">📢 Join @yantraias Channel</button>
-        <button id="verify-btn" style="margin-top:12px;" onclick="continueAfterJoin()">✅ I've Joined — Verify &amp; Start</button>
+        <button id="verify-btn" style="margin-top:12px;" onclick="continueAfterJoin()">✅ I've Joined — Continue Now</button>
         <p id="join-status" class="muted" style="margin-top:10px;"></p>
     </div>
 
@@ -266,6 +266,8 @@
                 .forEach(s => document.getElementById(s).classList.toggle("hidden", s !== id));
         }
 
+        let redirectCountdownTimer = null;
+
         function openChannel() {
             const url = `https://t.me/${CHANNEL_USERNAME}`;
             if (tg && tg.openTelegramLink) {
@@ -273,6 +275,24 @@
             } else {
                 window.open(url, "_blank");
             }
+            startRedirectCountdown();
+        }
+
+        function startRedirectCountdown() {
+            clearInterval(redirectCountdownTimer);
+            const statusEl = document.getElementById("join-status");
+            let secondsLeft = 6;
+            statusEl.innerText = `Redirecting back to your quiz in ${secondsLeft}s…`;
+            redirectCountdownTimer = setInterval(() => {
+                secondsLeft--;
+                if (secondsLeft <= 0) {
+                    clearInterval(redirectCountdownTimer);
+                    redirectCountdownTimer = null;
+                    continueAfterJoin();
+                } else {
+                    statusEl.innerText = `Redirecting back to your quiz in ${secondsLeft}s…`;
+                }
+            }, 1000);
         }
 
         async function callApi(payload) {
@@ -286,6 +306,8 @@
         }
 
         function showJoinGate() {
+            clearInterval(redirectCountdownTimer);
+            redirectCountdownTimer = null;
             const heading = document.querySelector("#join-screen h2");
             const para = document.querySelector("#join-screen p");
             const btn = document.getElementById("verify-btn");
@@ -298,6 +320,8 @@
         }
 
         function continueAfterJoin() {
+            clearInterval(redirectCountdownTimer);
+            redirectCountdownTimer = null;
             document.getElementById("join-status").innerText = "";
             if (pendingResumeQuiz) {
                 pendingResumeQuiz = false;
