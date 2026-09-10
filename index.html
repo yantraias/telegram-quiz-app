@@ -5,60 +5,108 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yantra IAS Daily Quiz</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; }
+        :root {
+            --bg-grad-1: #6d5ef8;
+            --bg-grad-2: #9b6bf5;
+            --card-bg: #ffffff;
+            --text-main: #211f36;
+            --text-muted: #7a7794;
+            --accent: #6d5ef8;
+            --accent-2: #ff7db8;
+            --success: #16c98d;
+            --danger: #ff5c72;
+            --border: #ecebf7;
+        }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #222222);
-            padding: 16px;
-            margin: 0;
-        }
-        .card {
-            background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--tg-theme-bg-color, linear-gradient(160deg, var(--bg-grad-1), var(--bg-grad-2) 60%));
+            background-attachment: fixed;
+            color: var(--text-main);
             padding: 18px;
-            border-radius: 14px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin: 0;
+            min-height: 100vh;
         }
+        h1, h2, h3, .headline { font-family: "Poppins", "Inter", sans-serif; }
+        .wrap { max-width: 480px; margin: 0 auto; }
+        .card {
+            background: var(--tg-theme-secondary-bg-color, var(--card-bg));
+            padding: 22px;
+            border-radius: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 12px 30px rgba(30, 20, 80, 0.18);
+            border: 1px solid rgba(255,255,255,0.4);
+            animation: rise .35s ease;
+        }
+        @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         select, button {
             width: 100%;
-            padding: 12px;
+            padding: 13px 16px;
             margin-top: 8px;
-            border-radius: 10px;
-            border: 1px solid #ccc;
-            font-size: 16px;
+            border-radius: 12px;
+            border: 1.5px solid var(--border);
+            font-size: 15.5px;
             box-sizing: border-box;
+            font-family: inherit;
         }
+        select { background: #f8f8fd; color: var(--text-main); font-weight: 500; }
         button {
-            background-color: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            color: #fff;
             border: none;
-            font-weight: bold;
+            font-weight: 700;
             cursor: pointer;
+            letter-spacing: .2px;
+            box-shadow: 0 6px 16px rgba(109, 94, 248, 0.35);
+            transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
         }
-        button:active { opacity: 0.85; }
-        button.secondary { background-color: #6b7280; }
-        button.success { background-color: #10b981; }
+        button:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(109, 94, 248, 0.42); }
+        button:active { transform: translateY(0); opacity: 0.92; }
+        button:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
+        button.secondary { background: #6b7280; box-shadow: 0 6px 16px rgba(107,114,128,.3); }
+        button.success { background: linear-gradient(135deg, #16c98d, #0ea973); box-shadow: 0 6px 16px rgba(22,201,141,.35); }
+        button.ghost { background: #f1effe; color: var(--accent); box-shadow: none; border: 1.5px solid #e2defb; }
         .hidden { display: none !important; }
         .center { text-align: center; }
-        .muted { color: #6b7280; font-size: 14px; }
-        .timer-bar { height: 6px; background-color: #e5e7eb; width: 100%; border-radius: 3px; overflow: hidden; margin-top: 10px; }
-        .timer-progress { height: 100%; background-color: #ef4444; width: 100%; transition: width 1s linear; }
-        .option-btn { background: #ffffff; color: #222222; border: 1px solid #d1d5db; text-align: left; font-weight: normal; margin-bottom: 8px; transition: background-color 0.2s; }
-        .correct-choice { background-color: #10b981 !important; color: white !important; border-color: #059669 !important; }
-        .wrong-choice { background-color: #ef4444 !important; color: white !important; border-color: #dc2626 !important; }
-        .explanation-box { background: #eef2ff; border-left: 4px solid #4f46e5; padding: 12px; border-radius: 8px; margin-top: 12px; font-size: 14px; line-height: 1.5; white-space: pre-line; }
-        .badge { display: inline-block; background: #4f46e5; color: white; font-size: 12px; font-weight: bold; padding: 3px 10px; border-radius: 999px; margin-bottom: 8px; }
+        .muted { color: var(--text-muted); font-size: 13.5px; }
+        .timer-bar { height: 8px; background: #efedfb; width: 100%; border-radius: 999px; overflow: hidden; margin-top: 12px; }
+        .timer-progress { height: 100%; background: linear-gradient(90deg, #16c98d, #ffd166 60%, #ff5c72); width: 100%; transition: width 1s linear; border-radius: 999px; }
+        .option-btn {
+            background: #fff; color: var(--text-main); border: 1.5px solid var(--border);
+            text-align: left; font-weight: 600; margin-bottom: 10px; transition: all .15s ease;
+            box-shadow: 0 2px 8px rgba(30,20,80,.06);
+        }
+        .option-btn:hover:not(:disabled) { border-color: var(--accent); transform: translateY(-1px); }
+        .correct-choice { background: linear-gradient(135deg, #16c98d, #0ea973) !important; color: #fff !important; border-color: transparent !important; box-shadow: 0 6px 16px rgba(22,201,141,.35) !important; }
+        .wrong-choice { background: linear-gradient(135deg, #ff5c72, #e14a60) !important; color: #fff !important; border-color: transparent !important; box-shadow: 0 6px 16px rgba(255,92,114,.35) !important; }
+        .explanation-box { background: #f4f2ff; border-left: 4px solid var(--accent); padding: 14px; border-radius: 12px; margin-top: 12px; font-size: 14px; line-height: 1.6; white-space: pre-line; }
+        .badge { display: inline-block; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: white; font-size: 11.5px; font-weight: 700; padding: 4px 12px; border-radius: 999px; margin-bottom: 10px; letter-spacing: .3px; text-transform: uppercase; }
         .row { display: flex; justify-content: space-between; align-items: center; }
-        .lb-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+        .lb-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
         .lb-item:last-child { border-bottom: none; }
-        .lb-rank { font-weight: bold; width: 28px; }
-        .score-big { font-size: 42px; font-weight: bold; margin: 6px 0; }
-        .channel-link { display: block; text-align: center; margin-top: 14px; font-size: 14px; color: var(--tg-theme-link-color, #2481cc); text-decoration: none; }
+        .lb-rank { font-weight: 800; width: 30px; color: var(--accent); }
+        .lb-rank.gold { color: #e8a723; }
+        .lb-rank.silver { color: #9aa0ab; }
+        .lb-rank.bronze { color: #c17a45; }
+        .lb-name { font-weight: 600; }
+        .score-big { font-size: 46px; font-weight: 800; margin: 8px 0; font-family: "Poppins", sans-serif; background: linear-gradient(135deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .channel-link { display: block; text-align: center; margin-top: 16px; font-size: 13.5px; color: var(--accent); text-decoration: none; font-weight: 600; }
+        .score-counter-pill { background: #f1effe; color: var(--accent); font-weight: 700; padding: 5px 14px; border-radius: 999px; font-size: 13.5px; }
+        .qnum-pill { color: var(--text-muted); font-weight: 600; font-size: 13.5px; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+        .tab-btn { flex: 1; margin-top: 0; padding: 10px; font-size: 13.5px; }
+        .tab-btn.inactive { background: #f1effe; color: var(--accent); box-shadow: none; }
+        .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #ffffff66; border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; margin-right: 6px; vertical-align: -2px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .translating { opacity: 0.55; }
     </style>
 </head>
 <body>
+<div class="wrap">
 
     <!-- SCREEN 0: LOADING -->
     <div id="loading-screen" class="card center">
@@ -68,7 +116,7 @@
 
     <!-- SCREEN 1: JOIN CHANNEL GATE -->
     <div id="join-screen" class="card hidden">
-        <h2>👋 Welcome to Yantra IAS Daily Quiz</h2>
+        <h2 class="headline">👋 Welcome to Yantra IAS Daily Quiz</h2>
         <p>Join our Telegram channel to get daily quiz updates, current affairs and study material before you start.</p>
         <button class="success" onclick="openChannel()">📢 Join @yantraias Channel</button>
         <button id="verify-btn" style="margin-top:12px;" onclick="continueAfterJoin()">✅ I've Joined — Verify &amp; Start</button>
@@ -77,7 +125,7 @@
 
     <!-- SCREEN 2: QUIZ SETUP -->
     <div id="setup-screen" class="card hidden">
-        <h2 id="greeting">📝 Configure Your Quiz</h2>
+        <h2 id="greeting" class="headline">📝 Configure Your Quiz</h2>
 
         <label><b>Select Subject:</b></label>
         <select id="subject"></select>
@@ -97,6 +145,10 @@
             <option value="60">60 Seconds</option>
         </select>
 
+        <label style="display:block; margin-top:15px;"><b>Question Language:</b></label>
+        <select id="language"></select>
+        <p class="muted" style="margin-top:6px;">Translations are auto-generated and may not be perfectly accurate.</p>
+
         <button style="margin-top:20px;" onclick="startQuiz()">🚀 Start Quiz</button>
         <button class="success" onclick="showLeaderboard()">🏆 View Leaderboard</button>
         <a class="channel-link" href="#" onclick="openChannel(); return false;">📢 Visit @yantraias channel</a>
@@ -106,21 +158,23 @@
     <div id="quiz-screen" class="hidden">
         <div class="card">
             <div class="row">
-                <span id="question-number">Question 1/10</span>
-                <span id="score-counter">Score: 0</span>
+                <span class="qnum-pill" id="question-number">Question 1/10</span>
+                <span class="score-counter-pill" id="score-counter">Score: 0</span>
             </div>
             <div class="timer-bar"><div id="progress" class="timer-progress"></div></div>
             <span class="badge" id="question-subject-badge"></span>
-            <p id="question-text" style="font-size: 18px; font-weight: bold; margin-top: 8px;"></p>
+            <p id="question-text" style="font-size: 18px; font-weight: 700; margin-top: 8px; line-height:1.45;"></p>
         </div>
         <div id="options-container"></div>
+        <button id="explain-btn" class="ghost hidden" onclick="toggleExplanation()">💡 Show Explanation</button>
         <div id="explanation-container"></div>
-        <button id="next-btn" class="hidden" onclick="nextQuestion()">Next ➡️</button>
+        <p id="auto-advance-note" class="muted center hidden" style="margin-top:10px;"></p>
+        <button id="next-btn" class="hidden" style="margin-top:10px;" onclick="nextQuestion()">Next ➡️</button>
     </div>
 
     <!-- SCREEN 4: RESULT -->
     <div id="result-screen" class="card hidden center">
-        <h2>🎉 Quiz Complete!</h2>
+        <h2 class="headline">🎉 Quiz Complete!</h2>
         <div class="score-big" id="result-score">0/10</div>
         <p class="muted" id="result-percent">0% correct</p>
         <button onclick="startQuiz()">🔁 Play Again</button>
@@ -130,17 +184,38 @@
 
     <!-- SCREEN 5: LEADERBOARD -->
     <div id="leaderboard-screen" class="card hidden">
-        <h2>🏆 Your Best Scores</h2>
-        <p class="muted">Saved on this device only — play regularly to climb your own leaderboard!</p>
-        <div id="leaderboard-list"></div>
+        <h2 class="headline">🏆 Leaderboard</h2>
+        <div class="tabs">
+            <button class="tab-btn" id="tab-global" onclick="switchLeaderboardTab('global')">🌍 Global</button>
+            <button class="tab-btn inactive" id="tab-local" onclick="switchLeaderboardTab('local')">📱 My Attempts</button>
+        </div>
+        <div id="leaderboard-list">Loading…</div>
         <button style="margin-top:20px;" class="secondary" onclick="showSetup()">⬅️ Back to Menu</button>
     </div>
+
+</div>
 
     <script>
         const CHANNEL_USERNAME = "yantraias";
         const DATABASE_URL = "https://raw.githubusercontent.com/yantraias/telegram-quiz-app/main/quizzes.json";
-        const VERIFY_URL = "https://yantraias-quiz-verify.yantratelugu.workers.dev/";
+        const API_URL = "https://yantraias-quiz-verify.yantratelugu.workers.dev/";
         const HISTORY_KEY = "yantraQuizHistory";
+        const TRANSLATE_EMAIL = "yantraias@gmail.com";
+
+        const LANGUAGES = [
+            { code: "te", label: "తెలుగు (Telugu)" },
+            { code: "hi", label: "हिन्दी (Hindi)" },
+            { code: "ta", label: "தமிழ் (Tamil)" },
+            { code: "kn", label: "ಕನ್ನಡ (Kannada)" },
+            { code: "ml", label: "മലയാളം (Malayalam)" },
+            { code: "mr", label: "मराठी (Marathi)" },
+            { code: "bn", label: "বাংলা (Bengali)" },
+            { code: "gu", label: "ગુજરાતી (Gujarati)" },
+            { code: "pa", label: "ਪੰਜਾਬੀ (Punjabi)" },
+            { code: "or", label: "ଓଡ଼ିଆ (Odia)" },
+            { code: "ur", label: "اردو (Urdu)" },
+            { code: "en", label: "English (Original)" },
+        ];
 
         const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
         if (tg) {
@@ -153,7 +228,12 @@
         let currentIndex = 0;
         let score = 0;
         let timerInterval;
+        let autoAdvanceTimeout;
         let answered = false;
+        let currentLanguage = "en";
+        let explanationShown = false;
+        let currentLeaderboardTab = "global";
+        const translationCache = {};
 
         function lowercaseKeys(obj) {
             return Object.keys(obj).reduce((acc, key) => {
@@ -176,18 +256,23 @@
             }
         }
 
+        async function callApi(payload) {
+            const resp = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+            const data = await resp.json();
+            return { ok: resp.ok, data };
+        }
+
         async function checkMembership() {
             if (!tg || !tg.initData) {
                 return { checkable: false };
             }
             try {
-                const resp = await fetch(VERIFY_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ initData: tg.initData }),
-                });
-                const data = await resp.json();
-                if (!resp.ok) {
+                const { ok, data } = await callApi({ action: "verify", initData: tg.initData });
+                if (!ok) {
                     return { checkable: true, isMember: false, error: data.error || "Verification failed" };
                 }
                 return { checkable: true, isMember: !!data.isMember, status: data.status };
@@ -227,6 +312,7 @@
                 masterDatabase = rawData.map(item => lowercaseKeys(item));
 
                 populateSubjects();
+                populateLanguages();
 
                 const membership = await checkMembership();
                 if (membership.checkable && membership.isMember) {
@@ -263,9 +349,38 @@
             });
         }
 
+        function populateLanguages() {
+            const select = document.getElementById("language");
+            select.innerHTML = "";
+            LANGUAGES.forEach(l => {
+                const opt = document.createElement("option");
+                opt.value = l.code;
+                opt.innerText = l.label;
+                select.appendChild(opt);
+            });
+            select.value = "en";
+        }
+
         function greetUser() {
             const name = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user.first_name : null;
             document.getElementById("greeting").innerText = name ? `📝 Hi ${name}, configure your quiz` : "📝 Configure Your Quiz";
+        }
+
+        async function translateText(text, targetLang) {
+            if (!text || targetLang === "en") return text;
+            const cacheKey = targetLang + "::" + text;
+            if (translationCache[cacheKey]) return translationCache[cacheKey];
+            try {
+                const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text.slice(0, 480))
+                    + "&langpair=en|" + targetLang + "&de=" + encodeURIComponent(TRANSLATE_EMAIL);
+                const resp = await fetch(url);
+                const data = await resp.json();
+                const translated = data && data.responseData && data.responseData.translatedText ? data.responseData.translatedText : text;
+                translationCache[cacheKey] = translated;
+                return translated;
+            } catch (e) {
+                return text;
+            }
         }
 
         function shuffleArray(array) {
@@ -283,6 +398,7 @@
         function startQuiz() {
             const selectedSub = document.getElementById("subject").value;
             const count = parseInt(document.getElementById("q-count").value, 10);
+            currentLanguage = document.getElementById("language").value;
 
             let filteredQuestions = selectedSub === "__all__"
                 ? masterDatabase
@@ -301,11 +417,16 @@
             loadQuestion();
         }
 
-        function loadQuestion() {
+        async function loadQuestion() {
             clearInterval(timerInterval);
+            clearTimeout(autoAdvanceTimeout);
             answered = false;
+            explanationShown = false;
             document.getElementById("next-btn").classList.add("hidden");
+            document.getElementById("explain-btn").classList.add("hidden");
+            document.getElementById("explain-btn").innerText = "💡 Show Explanation";
             document.getElementById("explanation-container").innerHTML = "";
+            document.getElementById("auto-advance-note").classList.add("hidden");
 
             if (currentIndex >= activeQuestions.length) {
                 endQuiz();
@@ -316,10 +437,9 @@
             document.getElementById("question-number").innerText = `Question ${currentIndex + 1}/${activeQuestions.length}`;
             document.getElementById("score-counter").innerText = `Score: ${score}`;
             document.getElementById("question-subject-badge").innerText = currentQ.subject || "";
-            document.getElementById("question-text").innerText = currentQ.question;
 
-            const container = document.getElementById("options-container");
-            container.innerHTML = "";
+            const qTextEl = document.getElementById("question-text");
+            qTextEl.innerText = currentQ.question;
 
             const optionsList = [
                 currentQ.option_0 !== undefined ? currentQ.option_0 : currentQ.option0,
@@ -329,6 +449,8 @@
             ];
             const cleanOptions = optionsList.filter(opt => opt !== undefined && opt !== null && opt !== "");
 
+            const container = document.getElementById("options-container");
+            container.innerHTML = "";
             cleanOptions.forEach((opt, idx) => {
                 const btn = document.createElement("button");
                 btn.className = "option-btn";
@@ -338,6 +460,22 @@
             });
 
             startTimer();
+
+            if (currentLanguage !== "en") {
+                qTextEl.classList.add("translating");
+                const translatedQ = await translateText(currentQ.question, currentLanguage);
+                if (activeQuestions[currentIndex] === currentQ) {
+                    qTextEl.innerText = translatedQ;
+                    qTextEl.classList.remove("translating");
+                }
+                const optionButtons = container.querySelectorAll(".option-btn");
+                cleanOptions.forEach(async (opt, idx) => {
+                    const translatedOpt = await translateText(opt, currentLanguage);
+                    if (activeQuestions[currentIndex] === currentQ && optionButtons[idx]) {
+                        optionButtons[idx].innerText = translatedOpt;
+                    }
+                });
+            }
         }
 
         function startTimer() {
@@ -370,6 +508,8 @@
             const buttons = document.querySelectorAll(".option-btn");
             buttons.forEach(btn => btn.disabled = true);
 
+            const timedOut = selectedIdx === -1;
+
             if (selectedIdx === correctIdx) {
                 if (clickedBtn) clickedBtn.classList.add("correct-choice");
                 score++;
@@ -380,25 +520,62 @@
             }
 
             if (currentQ.explanation) {
-                const box = document.createElement("div");
-                box.className = "explanation-box";
-                box.innerText = currentQ.explanation;
-                document.getElementById("explanation-container").appendChild(box);
+                document.getElementById("explain-btn").classList.remove("hidden");
+            }
+
+            const noteEl = document.getElementById("auto-advance-note");
+            if (timedOut) {
+                noteEl.innerText = "⏱ Time's up! Moving to the next question…";
+                noteEl.classList.remove("hidden");
+                autoAdvanceTimeout = setTimeout(nextQuestion, 2500);
             }
 
             document.getElementById("next-btn").classList.remove("hidden");
         }
 
+        async function toggleExplanation() {
+            const currentQ = activeQuestions[currentIndex];
+            const box = document.getElementById("explanation-container");
+            const btn = document.getElementById("explain-btn");
+
+            explanationShown = !explanationShown;
+            if (!explanationShown) {
+                box.innerHTML = "";
+                btn.innerText = "💡 Show Explanation";
+                return;
+            }
+
+            btn.innerText = "🙈 Hide Explanation";
+            let text = currentQ.explanation;
+            if (currentLanguage !== "en") {
+                box.innerHTML = '<div class="explanation-box translating">Translating…</div>';
+                text = await translateText(text, currentLanguage);
+            }
+            if (explanationShown) {
+                box.innerHTML = "";
+                const div = document.createElement("div");
+                div.className = "explanation-box";
+                div.innerText = text;
+                box.appendChild(div);
+            }
+        }
+
         function nextQuestion() {
+            clearTimeout(autoAdvanceTimeout);
             currentIndex++;
             loadQuestion();
         }
 
-        function endQuiz() {
+        async function endQuiz() {
             const total = activeQuestions.length;
             const percent = total > 0 ? Math.round((score / total) * 100) : 0;
+            const subjectLabel = document.getElementById("subject").selectedOptions[0].innerText;
 
-            saveAttempt(document.getElementById("subject").selectedOptions[0].innerText, score, total, percent);
+            saveAttempt(subjectLabel, score, total, percent);
+
+            if (tg && tg.initData) {
+                callApi({ action: "submitScore", initData: tg.initData, score: score }).catch(() => {});
+            }
 
             document.getElementById("result-score").innerText = `${score}/${total}`;
             document.getElementById("result-percent").innerText = `${percent}% correct`;
@@ -426,12 +603,59 @@
         }
 
         function showLeaderboard() {
+            screen("leaderboard-screen");
+            switchLeaderboardTab("global");
+        }
+
+        function switchLeaderboardTab(tab) {
+            currentLeaderboardTab = tab;
+            document.getElementById("tab-global").classList.toggle("inactive", tab !== "global");
+            document.getElementById("tab-local").classList.toggle("inactive", tab !== "local");
+            if (tab === "global") {
+                renderGlobalLeaderboard();
+            } else {
+                renderLocalLeaderboard();
+            }
+        }
+
+        async function renderGlobalLeaderboard() {
+            const list = document.getElementById("leaderboard-list");
+            list.innerHTML = '<p class="muted"><span class="spinner" style="border-color:#00000022;border-top-color:#6d5ef8;"></span>Loading global standings…</p>';
+            try {
+                const payload = { action: "getLeaderboard" };
+                if (tg && tg.initData) payload.initData = tg.initData;
+                const { ok, data } = await callApi(payload);
+                if (!ok) throw new Error("Request failed");
+
+                if (currentLeaderboardTab !== "global") return;
+
+                let html = "";
+                if (data.yourRank) {
+                    html += `<p class="muted">Your rank: <b>#${data.yourRank.rank}</b> of ${data.yourRank.outOf} · ${data.yourRank.totalCorrect} correct answers total</p>`;
+                } else if (!tg || !tg.initData) {
+                    html += `<p class="muted">Open via Telegram to see your own rank.</p>`;
+                }
+
+                if (data.top.length === 0) {
+                    html += '<p class="muted">No scores yet — be the first to play!</p>';
+                } else {
+                    data.top.forEach((entry, i) => {
+                        const rankClass = i === 0 ? "gold" : i === 1 ? "silver" : i === 2 ? "bronze" : "";
+                        html += `<div class="lb-item"><span><span class="lb-rank ${rankClass}">#${i + 1}</span> <span class="lb-name">${escapeHtml(entry.name)}</span></span><span><b>${entry.totalCorrect}</b> correct · ${entry.totalPlayed} played</span></div>`;
+                    });
+                }
+                list.innerHTML = html;
+            } catch (err) {
+                list.innerHTML = '<p class="muted">Could not load the global leaderboard right now. Please try again later.</p>';
+            }
+        }
+
+        function renderLocalLeaderboard() {
             const history = loadHistory();
             const list = document.getElementById("leaderboard-list");
 
             if (history.length === 0) {
-                list.innerHTML = '<p class="muted">No attempts yet — play a quiz to appear here!</p>';
-                screen("leaderboard-screen");
+                list.innerHTML = '<p class="muted">No attempts yet on this device — play a quiz to appear here!</p>';
                 return;
             }
 
@@ -439,13 +663,19 @@
             const totalAttempts = history.length;
             const avgPercent = Math.round(history.reduce((sum, h) => sum + h.percent, 0) / totalAttempts);
 
-            let html = `<p class="muted">${totalAttempts} quiz(zes) played · ${avgPercent}% average</p>`;
+            let html = `<p class="muted">${totalAttempts} quiz(zes) played on this device · ${avgPercent}% average</p>`;
             top.forEach((h, i) => {
                 const date = new Date(h.date).toLocaleDateString();
-                html += `<div class="lb-item"><span><span class="lb-rank">#${i + 1}</span> ${h.subject} — ${h.score}/${h.total}</span><span>${h.percent}% · ${date}</span></div>`;
+                const rankClass = i === 0 ? "gold" : i === 1 ? "silver" : i === 2 ? "bronze" : "";
+                html += `<div class="lb-item"><span><span class="lb-rank ${rankClass}">#${i + 1}</span> ${escapeHtml(h.subject)} — ${h.score}/${h.total}</span><span>${h.percent}% · ${date}</span></div>`;
             });
             list.innerHTML = html;
-            screen("leaderboard-screen");
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement("div");
+            div.innerText = str == null ? "" : String(str);
+            return div.innerHTML;
         }
     </script>
 </body>
