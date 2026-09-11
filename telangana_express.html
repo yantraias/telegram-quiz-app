@@ -1,0 +1,2547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telangana Movement - Pixel March MCQ Game</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Pixel Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    
+    body {
+      background-color: #0d0f18;
+      font-family: 'VT323', monospace;
+      color: #f1f5f9;
+      overflow-x: hidden;
+      margin: 0;
+      padding: 0;
+    }
+
+    .font-pixel {
+      font-family: 'Press Start 2P', cursive;
+    }
+
+    .pixel-border {
+      box-shadow: 
+        0 -4px 0 0 #2a203a,
+        0 4px 0 0 #2a203a,
+        -4px 0 0 0 #2a203a,
+        4px 0 0 0 #2a203a,
+        0 0 0 4px #e2b714,
+        inset 0 0 12px rgba(0,0,0,0.8);
+      background: linear-gradient(180deg, #1d192b 0%, #0f0a1c 100%);
+    }
+
+    .pixel-box {
+      border: 4px solid #4a3b63;
+      box-shadow: inset -4px -4px 0px 0px #1a1329, inset 4px 4px 0px 0px #705898;
+    }
+
+    .pixel-btn {
+      position: relative;
+      transition: transform 0.05s, background-color 0.15s;
+      border: 3px solid #000;
+      box-shadow: inset -3px -3px 0px 0px rgba(0,0,0,0.4), inset 3px 3px 0px 0px rgba(255,255,255,0.3);
+    }
+
+    .pixel-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      filter: brightness(1.15);
+    }
+
+    .pixel-btn:active:not(:disabled) {
+      transform: translateY(2px);
+      box-shadow: inset 3px 3px 0px 0px rgba(0,0,0,0.6);
+    }
+
+    /* Crisp Canvas Pixel Art Rendering */
+    canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    /* Custom Scanline Effect */
+    .scanlines {
+      position: relative;
+      overflow: hidden;
+    }
+    .scanlines::before {
+      content: " ";
+      display: block;
+      position: absolute;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+      background-size: 100% 4px;
+      z-index: 10;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    /* Glowing Star Animation */
+    @keyframes starPulse {
+      0% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.2); opacity: 1; filter: drop-shadow(0 0 6px #50e3c2); }
+      100% { transform: scale(1); opacity: 0.8; }
+    }
+    .star-glow {
+      animation: starPulse 1.2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-2 sm:p-4 bg-slate-950">
+
+  <!-- MAIN CONTAINER / RETRO FRAME -->
+  <div class="w-full max-w-5xl pixel-border rounded-lg p-3 sm:p-5 scanlines flex flex-col gap-3 relative">
+    
+    <!-- TOP HEADER / HUD -->
+    <header class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-slate-900/90 rounded border-2 border-indigo-900 text-lg sm:text-2xl">
+      
+      <!-- LIVES & SCORE -->
+      <div class="flex items-center gap-4 sm:gap-6">
+        <div class="flex items-center gap-1 text-red-500 font-pixel text-xs sm:text-base">
+          <span id="lives-display">❤️❤️❤️</span>
+        </div>
+        <div class="font-pixel text-yellow-400 text-xs sm:text-sm tracking-wider">
+          SCORE: <span id="score-display" class="text-white">000000</span>
+        </div>
+      </div>
+
+      <!-- POWER-UPS & SFX TOGGLE -->
+      <div class="flex items-center gap-2">
+        <!-- ERA TRACK INDICATOR -->
+        <div id="bgm-track-display" class="hidden sm:flex items-center gap-1 text-xs font-pixel text-teal-300 bg-slate-950 px-2 py-1 rounded border border-indigo-800">
+          🎵 <span id="track-name">Kakatiya Echoes</span>
+        </div>
+        <button id="btn-powerup-pen" title="Kaloji's Pen (Eliminate 2 wrong choices)" class="pixel-btn bg-indigo-700 hover:bg-indigo-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1 font-pixel disabled:opacity-40">
+          ✒️ <span class="hidden sm:inline">50/50</span> <span id="pen-count" class="text-amber-300">(2)</span>
+        </button>
+        <button id="btn-powerup-freeze" title="Time Freeze (+10s Timer)" class="pixel-btn bg-cyan-700 hover:bg-cyan-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1 font-pixel disabled:opacity-40">
+          ⏱️ <span id="freeze-count" class="text-amber-300">(1)</span>
+        </button>
+        <button id="btn-audio" class="pixel-btn bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded text-xs font-pixel" title="Toggle Music & Sound">
+          🔊
+        </button>
+      </div>
+    </header>
+
+    <!-- PARALLAX PIXEL ART CANVAS -->
+    <div class="relative w-full h-48 sm:h-64 rounded overflow-hidden border-4 border-slate-800 bg-slate-900 shadow-inner">
+      <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+      
+      <!-- STREAK / FEVER OVERLAY -->
+      <div id="fever-banner" class="hidden absolute top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-slate-950 font-pixel text-xs sm:text-sm px-4 py-1.5 rounded-full border-2 border-yellow-200 shadow-lg animate-bounce">
+        🔥 DHOOM DHAM FEVER! (2X POINTS) 🔥
+      </div>
+    </div>
+
+    <!-- MCQ INTERFACE BOX -->
+    <div class="pixel-box rounded-lg p-3 sm:p-5 bg-slate-900/95 flex flex-col gap-3 relative">
+      
+      <!-- ERA BADGE HEADER -->
+      <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-purple-900 border-2 border-purple-400 text-purple-200 font-pixel text-xs px-4 py-1 rounded-full shadow-md tracking-wider" id="era-badge">
+        Era 1: Ancient & Kakatiya
+      </div>
+
+      <!-- QUESTION HEADER & TIMER -->
+      <div class="mt-2 flex items-center justify-between gap-2 border-b border-purple-900/60 pb-2">
+        <span class="text-xs sm:text-sm font-pixel text-indigo-300">QUESTION <span id="q-number">1</span></span>
+        <!-- TIMER BAR -->
+        <div class="w-36 sm:w-48 bg-slate-950 h-3.5 rounded-full p-0.5 border border-purple-500/50">
+          <div id="timer-bar" class="h-full bg-emerald-400 rounded-full transition-all duration-200 w-full"></div>
+        </div>
+      </div>
+
+      <!-- QUESTION TEXT -->
+      <div class="min-h-[50px] flex items-center">
+        <h2 id="question-text" class="text-lg sm:text-2xl font-pixel leading-relaxed text-amber-100 tracking-wide">
+          Loading historical question...
+        </h2>
+      </div>
+
+      <!-- MCQ OPTIONS GRID -->
+      <div id="options-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mt-1">
+        <!-- Option buttons dynamically generated -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- START / WELCOME MODAL -->
+  <div id="modal-start" class="fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="max-w-lg w-full pixel-border p-6 rounded-lg bg-slate-900 text-center flex flex-col gap-4">
+      <h1 class="font-pixel text-xl sm:text-2xl text-yellow-400 leading-snug">
+        TELANGANA EXPRESS<br>
+        <span class="text-sm sm:text-base text-purple-300">Samskrutika Yatra</span>
+      </h1>
+      <p class="text-lg sm:text-xl text-slate-300">
+        Lead the historical march through Telangana's rich history, heroic struggles, and statehood agitation!
+      </p>
+      <div class="text-left bg-slate-950/80 p-3 rounded border border-purple-900 text-sm sm:text-base text-purple-200 space-y-1">
+        <p>🚩 <strong>Build the March:</strong> Correct answers add citizens, poets, & drummers to your procession.</p>
+        <p>❤️ <strong>Keep Momentum:</strong> You have 3 lives. Don't let the timer run out!</p>
+        <p>⚡ <strong>Power-ups:</strong> Use Kaloji's Pen (50/50) or Time Freeze when needed.</p>
+      </div>
+      <button id="btn-start-game" class="pixel-btn bg-emerald-600 hover:bg-emerald-500 text-white font-pixel py-3 px-6 rounded text-sm sm:text-base mt-2">
+        START THE MARCH ▶
+      </button>
+    </div>
+  </div>
+
+  <!-- HISTORICAL FEEDBACK MODAL -->
+  <div id="modal-feedback" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-40 flex items-center justify-center p-4">
+    <div class="max-w-md w-full pixel-border p-5 rounded-lg bg-slate-900 text-center flex flex-col gap-3">
+      <div id="feedback-title" class="font-pixel text-lg text-emerald-400">CORRECT!</div>
+      <div id="feedback-text" class="text-lg text-slate-200 bg-slate-950 p-3 rounded border border-slate-800 text-left"></div>
+      <button id="btn-next-q" class="pixel-btn bg-indigo-600 hover:bg-indigo-500 text-white font-pixel py-2 px-4 rounded text-xs sm:text-sm self-center">
+        CONTINUE MARCH ➔
+      </button>
+    </div>
+  </div>
+
+  <!-- GAME OVER MODAL -->
+  <div id="modal-gameover" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="max-w-md w-full pixel-border p-6 rounded-lg bg-slate-900 text-center flex flex-col gap-4">
+      <h2 class="font-pixel text-xl text-red-500">YATRA CONCLUDED</h2>
+      <div class="text-slate-300 text-lg">
+        Final Score: <span id="final-score" class="text-yellow-400 font-pixel text-xl">0</span>
+      </div>
+      <div class="text-slate-300 text-lg">
+        Title Earned: <span id="final-rank" class="text-emerald-400 font-pixel text-base">Veera Yatri</span>
+      </div>
+      <p id="gameover-msg" class="text-slate-400 text-base italic bg-slate-950 p-3 rounded border border-slate-800">
+        "Telangana Bhasha, Samskruti Mana Aatma!"
+      </p>
+      <button id="btn-restart" class="pixel-btn bg-yellow-600 hover:bg-yellow-500 text-slate-950 font-pixel py-3 px-6 rounded text-sm mt-2">
+        RESTART YATRA 🔄
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       1. GAME DATASET (HISTORICAL QUESTIONS & ERAS) - 10 QUESTIONS PER ERA
+       ========================================================================== */
+    const GAME_QUESTIONS = [
+      // ------------------------------------------------------------------------
+      // ERA 1: ANCIENT & KAKATIYA DYNASTY (Questions 1 - 10)
+      // ------------------------------------------------------------------------
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Which Kakatiya ruler initiated the construction of the iconic Ramappa Temple?",
+        options: ["Recharla Rudra / Ganapati Deva", "Prola II", "Rudrama Devi", "Prataparudra"],
+        answer: 0,
+        explanation: "Recharla Rudra, a general under Kakatiya King Ganapati Deva, constructed the famous Ramappa Temple at Palampet in 1213 AD."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "What was the original historical name of Warangal during the Kakatiya Reign?",
+        options: ["Golconda", "Orugallu", "Elgandal", "Indur"],
+        answer: 1,
+        explanation: "Warangal was known as 'Orugallu' (meaning 'single stone rock') referring to the monolithic hill fort."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Which Satavahana king composed the famous Prakrit poetic anthology 'Gatha Saptashati'?",
+        options: ["Gautamiputra Satakarni", "Yajna Sri Satakarni", "King Hala", "Simuka"],
+        answer: 2,
+        explanation: "King Hala, the 17th Satavahana ruler headquartered in Kotilingala/Paithan, authored 'Gatha Saptashati'."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Who was the legendary female ruler of the Kakatiya dynasty who defended Orugallu?",
+        options: ["Rani Rudrama Devi", "Kota Umadevi", "Nagamma", "Rani Chennamma"],
+        answer: 0,
+        explanation: "Rani Rudrama Devi (1262–1289 AD) was one of the few ruling queens in Indian history, known for military brilliance."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Which ancient town on the Godavari river bank was the early capital of the Satavahanas in Telangana?",
+        options: ["Kondapur", "Kotilingala", "Phanigiri", "Nagarjunakonda"],
+        answer: 1,
+        explanation: "Kotilingala in Jagtial district yielded early Satavahana coins, serving as their initial capital region."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Who built the famous Thousand Pillar Temple (Veyyi Stambhala Gudi) in Hanamkonda?",
+        options: ["Rudra Deva I", "Ganapati Deva", "Prataparudra", "Prola I"],
+        answer: 0,
+        explanation: "King Rudra Deva I constructed the Thousand Pillar Temple in 1163 AD dedicated to Lord Shiva, Vishnu, and Surya."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Who was the master sculptor after whom the Ramappa Temple is uniquely named?",
+        options: ["Sculptor Ramappa", "Jakkana", "Amarashilpi Ruvari", "Recharla"],
+        answer: 0,
+        explanation: "Ramappa Temple is perhaps the only temple in India named after its chief architect/sculptor, Ramappa."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Which massive lake was engineered by Kakatiya rulers near Warangal for agricultural irrigation?",
+        options: ["Pakhal Lake", "Hussain Sagar", "Himayat Sagar", "Osmansagar"],
+        answer: 0,
+        explanation: "Ganapati Deva constructed Pakhal Lake in 1213 AD, showcasing advanced Kakatiya water management."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Which Buddhist heritage site in Suryapet district contains prominent ancient stupa structures?",
+        options: ["Phanigiri", "Nelakondapalli", "Dhulikatta", "Bhavanipuram"],
+        answer: 0,
+        explanation: "Phanigiri in Suryapet district is a major Monastic Buddhist complex dating back to 1st century BC."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "What motif forms the royal arch structure that serves as the emblem of Telangana state?",
+        options: ["Kakatiya Kala Thoranam", "Charminar Arch", "Golconda Gateway", "Thousand Pillar Gate"],
+        answer: 0,
+        explanation: "The Kakatiya Kala Thoranam (Warangal Arch) is integrated into the official Telangana State Emblem."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Vijayapuri, the capital of the Ikshvaku dynasty, is known today by which name?",
+        options: ["Nagarjunakonda", "Kotilingala", "Phanigiri", "Kolanupaka"],
+        answer: 0,
+        explanation: "Vijayapuri flourished as the Ikshvaku capital on the Krishna river; the site is now known as Nagarjunakonda, largely submerged by the Nagarjuna Sagar reservoir."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "The Ikshvaku dynasty of Vijayapuri ruled the Krishna-Nalgonda region during which approximate period?",
+        options: ["225-325 CE", "1000-1100 CE", "50 BC-50 AD", "600-700 CE"],
+        answer: 0,
+        explanation: "The Ikshvakus of Vijayapuri held sway over parts of Telangana and coastal Andhra roughly between 225 CE and 325 CE."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "The Ikshvaku rulers of Vijayapuri were predominantly followers of which sect, worshipping Lord Kartikeya?",
+        options: ["Shaivism", "Vaishnavism", "Jainism", "Buddhism only"],
+        answer: 0,
+        explanation: "Most Ikshvaku-era temples at Nagarjunakonda were Shaiva shrines, with several dedicated to the war-god Kartikeya."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Which Kakatiya ruler is regarded as the dynasty's first fully sovereign, independent monarch?",
+        options: ["Rudradeva (Prataparudra I)", "Prola II", "Mahadeva", "Ganapati Deva"],
+        answer: 0,
+        explanation: "Rudradeva, who ruled c. 1158-1195 AD, threw off subordination to the Western Chalukyas and is counted as the first sovereign Kakatiya ruler."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Approximately during which years did Prola II, an early Kakatiya chief, hold power?",
+        options: ["c. 1116-1157 AD", "c. 1300-1350 AD", "c. 900-950 AD", "c. 1500-1550 AD"],
+        answer: 0,
+        explanation: "Prola II expanded Kakatiya territory as a feudatory power roughly between 1116 and 1157 AD, laying the ground for later sovereignty."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Who was the longest-reigning monarch of the Kakatiya dynasty, ruling for over six decades?",
+        options: ["Ganapati Deva", "Rudrama Devi", "Prataparudra II", "Mahadeva"],
+        answer: 0,
+        explanation: "Ganapati Deva ruled from around 1199 to 1262 AD, the longest reign of any Kakatiya monarch, greatly expanding the kingdom."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Ganapati Deva was succeeded on the Kakatiya throne by which family member?",
+        options: ["His daughter, Rudrama Devi", "His son, Prataparudra", "His brother", "His nephew, Ambadeva"],
+        answer: 0,
+        explanation: "Lacking a son, Ganapati Deva groomed his daughter Rudrama Devi as heir, making her one of the few female sovereigns in Indian history."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Who was the last independent monarch of the Kakatiya dynasty, ruling until 1323 AD?",
+        options: ["Prataparudra II", "Rudrama Devi", "Ganapati Deva", "Prola I"],
+        answer: 0,
+        explanation: "Prataparudra II, grandson of Rudrama Devi, was the last Kakatiya ruler; his reign ended with the fall of Warangal in 1323 AD."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "After Warangal fell in 1323 AD, Prataparudra II was captured by forces of Ulugh Khan and is believed to have died near which river while being taken to Delhi?",
+        options: ["Narmada", "Godavari", "Krishna", "Yamuna"],
+        answer: 0,
+        explanation: "Ulugh Khan (later Muhammad bin Tughlaq) captured Prataparudra II after the fall of Warangal; tradition holds the captive king died near the Narmada en route to Delhi."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Which local chieftain led the Telugu warriors who recaptured Warangal from the Delhi Sultanate around 1336 AD?",
+        options: ["Kapaya Nayaka (Musunuri Nayaks)", "Kaloji Narayana Rao", "Ambadeva", "Sultan Quli Qutb-ul-Mulk"],
+        answer: 0,
+        explanation: "Kapaya Nayaka led the Musunuri Nayaks, a confederacy of Telugu chiefs, in expelling the Delhi Sultanate's forces and restoring local rule at Warangal."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "In which year was the Ramappa Temple inscribed as a UNESCO World Heritage Site?",
+        options: ["2021", "2014", "2010", "2018"],
+        answer: 0,
+        explanation: "The Ramappa (Rudreshwara) Temple at Palampet was declared a UNESCO World Heritage Site in 2021, Telangana's first such recognition."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Before shifting to Warangal (Orugallu), the early Kakatiya chiefs ruled from which nearby town?",
+        options: ["Hanamkonda (Anumakonda)", "Nizamabad", "Bhongir", "Kolanupaka"],
+        answer: 0,
+        explanation: "The Kakatiyas initially governed from Hanamkonda before Orugallu (Warangal) was developed into the fortified capital."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "The Kakatiya kingdom's distinctive military-feudal landholding system, under which chiefs held land in return for troops, was called the:",
+        options: ["Nayankara system", "Mulki system", "Zonal system", "Jagirdari system"],
+        answer: 0,
+        explanation: "Under the Nayankara system, Kakatiya chiefs (Nayakas) were granted land and in turn owed military service and loyalty to the king."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "The Kakatiya royal emblem, seen on coins and seals, most commonly featured which animal?",
+        options: ["A boar (Varaha)", "A lion", "An elephant", "A peacock"],
+        answer: 0,
+        explanation: "The boar, or Varaha, served as the royal crest of the Kakatiya dynasty, appearing on their seals and coinage."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "The characteristic three-shrine temple layout pioneered under the Kakatiyas is architecturally termed a:",
+        options: ["Trikutalayam", "Panchayatana", "Gopuram complex", "Stupa"],
+        answer: 0,
+        explanation: "Trikutalayam refers to a temple with three shrines sharing a common hall, a plan the Kakatiyas favoured, seen at sites like Ramappa."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Ganapati Deva issued the 'Abhaya Sasanam', an edict offering safety and tax relief to merchants, at which coastal port?",
+        options: ["Motupalli", "Machilipatnam", "Kakinada", "Visakhapatnam"],
+        answer: 0,
+        explanation: "The Motupalli Abhaya Sasanam guaranteed the safety of overseas traders and their goods, reflecting Kakatiya efforts to boost maritime commerce."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Warangal was also historically known by which Telugu name, meaning 'City of a Single Rock'?",
+        options: ["Ekasilanagaram", "Orugallu Nagaram", "Panduranga Puri", "Bhagya Nagaram"],
+        answer: 0,
+        explanation: "Warangal carried the poetic name Ekasilanagaram ('one-stone city'), referring to the monolithic hill on which its fort was built."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Along with Pakhal, which other major artificial lake near Warangal is attributed to Kakatiya-era irrigation engineering?",
+        options: ["Laknavaram Lake", "Hussain Sagar", "Osmansagar", "Nagarjuna Sagar"],
+        answer: 0,
+        explanation: "Laknavaram Lake, like Pakhal, is one of several large irrigation tanks constructed under the Kakatiyas to support agriculture around Warangal."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "The town of Kolanupaka in Yadadri district is notable for housing an ancient Someshwara temple alongside which other major religious site?",
+        options: ["The Kulpakji Jain temple", "A Buddhist stupa", "A Sufi dargah", "A Sikh gurdwara"],
+        answer: 0,
+        explanation: "Kolanupaka is a rare site of religious confluence, home to both the Shaiva Someshwara temple and the revered Kulpakji Jain temple."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Nelakondapalli, an ancient Buddhist site with stupa remains, lies in which present-day Telangana district?",
+        options: ["Khammam", "Adilabad", "Nizamabad", "Mahbubnagar"],
+        answer: 0,
+        explanation: "Nelakondapalli in Khammam district preserves the remains of an ancient Buddhist stupa and monastic settlement."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "The Vemulawada Chalukyas, who ruled parts of northern Telangana as feudatories, primarily owed allegiance to which imperial dynasty?",
+        options: ["The Rashtrakutas", "The Kakatiyas", "The Mughals", "The Cholas"],
+        answer: 0,
+        explanation: "The Vemulawada branch of the Chalukyas governed as subordinate rulers under the imperial Rashtrakutas before the Kakatiyas rose to prominence."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "The Bhadrakali Temple near Warangal is traditionally credited to a ruler of which earlier dynasty, predating the Kakatiyas?",
+        options: ["The Chalukyas (Pulakeshin II)", "The Qutb Shahis", "The Ikshvakus", "The Satavahanas"],
+        answer: 0,
+        explanation: "Local tradition attributes the ancient Bhadrakali Temple to the Chalukya king Pulakeshin II, centuries before Kakatiya rule at Warangal."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Rudrama Devi's reign is generally held to have ended around 1289 AD following conflict with which regional chieftain?",
+        options: ["Ambadeva of the Kayastha family", "Kapaya Nayaka", "Sultan Quli Qutb-ul-Mulk", "Prola I"],
+        answer: 0,
+        explanation: "Rudrama Devi is traditionally believed to have died fighting the rebellious Kayastha chief Ambadeva around 1289 AD."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "The famous Venetian traveller who visited the Kakatiya kingdom and wrote admiringly of its ruler was:",
+        options: ["Marco Polo", "Ibn Battuta", "Hiuen Tsang", "Megasthenes"],
+        answer: 0,
+        explanation: "Marco Polo's travel accounts describe the Kakatiya kingdom of the Deccan and speak highly of its remarkable ruling queen."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "To assert her authority as a female ruler in a male-dominated era, Rudrama Devi is said to have adopted which male royal title?",
+        options: ["Rudradeva Maharaja", "Rudra Simha", "Veera Rudra", "Raja Rudra"],
+        answer: 0,
+        explanation: "Inscriptions and tradition suggest Rudrama Devi styled herself with the masculine title 'Rudradeva Maharaja' to reinforce her legitimacy as sovereign."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "The Satavahana dynasty, precursors to later Telangana kingdoms, are known to have shifted their capital between Kotilingala and which other well-known site?",
+        options: ["Amaravati", "Warangal", "Hyderabad", "Bhongir"],
+        answer: 0,
+        explanation: "Over their long rule, the Satavahanas moved their political centre between early sites like Kotilingala and later capitals such as Amaravati / Pratishthana."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "The ancient Ikshvaku capital of Nagarjunakonda exists today mostly as:",
+        options: ["An island museum site amid the Nagarjuna Sagar reservoir", "A fully intact standing city", "An underground excavation", "A modern township"],
+        answer: 0,
+        explanation: "The construction of the Nagarjuna Sagar Dam submerged most of ancient Vijayapuri; surviving monuments were relocated to a hilltop that is now an island."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "The extensive network of irrigation 'cheruvus' (tanks) built across the Telangana plateau is most closely associated with the water-management legacy of which dynasty?",
+        options: ["The Kakatiyas", "The Qutb Shahis", "The Asaf Jahis", "The Mughals"],
+        answer: 0,
+        explanation: "Kakatiya rulers built an extensive chain of tanks such as Pakhal and Laknavaram, forming the backbone of Telangana's traditional irrigation network."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Kakatiya rule over Telangana effectively ended in 1323 AD when Warangal fell to forces of which power?",
+        options: ["The Delhi Sultanate", "The Bahmani Sultanate", "The Qutb Shahi Sultanate", "The Vijayanagara Empire"],
+        answer: 0,
+        explanation: "In 1323 AD, forces of the Delhi Sultanate under Ulugh Khan finally overran Warangal, ending independent Kakatiya rule in the region."
+      },
+      {
+        eraName: "Era 1: Ancient & Kakatiya",
+        question: "Rudrama Devi's reign from 1262 to 1289 AD makes her notable as one of very few women in medieval Indian history to have:",
+        options: ["Ruled a major kingdom as sovereign monarch", "Led a religious reform movement", "Founded a new script for Telugu", "Built the first stepwell in the Deccan"],
+        answer: 0,
+        explanation: "Rudrama Devi personally commanded armies and administered the Kakatiya kingdom as its sovereign, an exceptionally rare position for a woman ruler in that era."
+      },
+
+      // ------------------------------------------------------------------------
+      // ERA 2: NIZAM ERA & PEASANT STRUGGLE (Questions 11 - 20)
+      // ------------------------------------------------------------------------
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Who was the martyr whose death in Kadavendi sparked the Telangana Armed Struggle?",
+        options: ["Doddi Komarayya", "Shoebullah Khan", "Komatireddy Ram Reddy", "Ravi Narayana Reddy"],
+        answer: 0,
+        explanation: "Doddi Komarayya was martyred on July 4, 1946 in Kadavendi, igniting the historic Peasants' Armed Struggle."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Which brave woman fought fearlessly against the Visnoor Deshmukh to protect her land?",
+        options: ["Chakali Ilamma", "Mallu Swarajyam", "Aipuri Laxmi", "Sarangapani Devi"],
+        answer: 0,
+        explanation: "Chakali Ilamma (Chityala Ilamma) became a symbol of revolutionary resistance against landlord feudalism."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Who penned the heroic poetry line 'Naa Telangana Koti Rathanala Veena'?",
+        options: ["Kaloji Narayana Rao", "Dasaradhi Krishnamacharyulu", "C. Narayana Reddy", "Pothana"],
+        answer: 1,
+        explanation: "Mahakavi Dasaradhi Krishnamacharyulu wrote this iconic tribute while imprisoned in Nizamabad Jail."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Who constructed the iconic Charminar in 1591 AD to commemorate the end of a plague epidemic?",
+        options: ["Muhammad Quli Qutb Shah", "Sultan Quli", "Abul Hasan Tana Shah", "Ibrahim Qutb Shah"],
+        answer: 0,
+        explanation: "Muhammad Quli Qutb Shah, the 5th ruler of the Qutb Shahi dynasty, built Charminar and founded Hyderabad."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Which revolutionary tribal leader coined the slogan 'Jal, Jangal, Zameen' (Water, Forest, Land)?",
+        options: ["Komaram Bheem", "Ramji Gond", "Birsa Munda", "Alluri Sitarama Raju"],
+        answer: 0,
+        explanation: "Komaram Bheem led an armed uprising against Nizam feudal tyranny in the forests of Asifabad/Jodeghat."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Which historic fort served as the original seat of power for the Qutb Shahi Dynasty before Hyderabad?",
+        options: ["Golconda Fort", "Bhongir Fort", "Devarakonda Fort", "Elgandal Fort"],
+        answer: 0,
+        explanation: "Golconda Fort was the capital of the Qutb Shahi kingdom, renowned world-wide for diamond trade."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Who was the editor of 'Imroze' newspaper assassinated for supporting integration with India?",
+        options: ["Shoebullah Khan", "Makhdoom Mohiuddin", "Suravaram Pratapa Reddy", "Burgula Ramakrishna Rao"],
+        answer: 0,
+        explanation: "Shoebullah Khan was martyred on August 22, 1948 by Razakars for advocating Hyderabad's merger with India."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "What was the codename of the Indian military action that integrated Hyderabad State into India in 1948?",
+        options: ["Operation Polo", "Operation Vijay", "Operation Blue Star", "Operation Meghdoot"],
+        answer: 0,
+        explanation: "Operation Polo (September 13–17, 1948) resulted in the liberation and integration of Hyderabad State."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Who founded the famous newspaper 'Golconda Patrika' in 1925 to mobilize social reform?",
+        options: ["Suravaram Pratapa Reddy", "Kaloji Narayana Rao", "Madapati Hanumantha Rao", "Burgula Ramakrishna Rao"],
+        answer: 0,
+        explanation: "Suravaram Pratapa Reddy started Golconda Patrika to promote Telugu language, education, and political awareness."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Who was the first elected Chief Minister of Hyderabad State following the 1952 elections?",
+        options: ["Burgula Ramakrishna Rao", "K.V. Ranga Reddy", "M. Channa Reddy", "P.V. Narasimha Rao"],
+        answer: 0,
+        explanation: "Dr. Burgula Ramakrishna Rao served as the chief minister of the democratic Hyderabad State from 1952 to 1956."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Who founded the Asaf Jahi dynasty (the Nizams of Hyderabad) in 1724?",
+        options: ["Nizam-ul-Mulk, Asaf Jah I", "Sultan Quli Qutb-ul-Mulk", "Mir Osman Ali Khan", "Salar Jung I"],
+        answer: 0,
+        explanation: "Mir Qamar-ud-din Khan, titled Nizam-ul-Mulk and later Asaf Jah, founded the Asaf Jahi dynasty as a Mughal viceroyalty that became the princely state of Hyderabad."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "The Asaf Jahi (Nizam) dynasty ruled the princely state of Hyderabad from 1724 until which year?",
+        options: ["1948", "1918", "1956", "1969"],
+        answer: 0,
+        explanation: "Asaf Jahi rule ended in September 1948 when Hyderabad State was integrated into India through Operation Polo."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Who founded the Qutb Shahi dynasty by declaring independence at Golconda in 1518?",
+        options: ["Sultan Quli Qutb-ul-Mulk", "Nizam-ul-Mulk", "Ibrahim Qutb Shah", "Abul Hasan Tana Shah"],
+        answer: 0,
+        explanation: "Sultan Quli Qutb-ul-Mulk, a former Bahmani noble, declared independence in 1518 and founded the Qutb Shahi Sultanate of Golconda."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "The Qutb Shahi Sultanate of Golconda, founded in 1518, was eventually annexed by the Mughals in which year?",
+        options: ["1687", "1724", "1591", "1600"],
+        answer: 0,
+        explanation: "Emperor Aurangzeb's forces besieged and annexed Golconda in 1687, ending nearly 170 years of Qutb Shahi rule."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Operation Polo, the Indian military action against Hyderabad State, formally began on which date in 1948?",
+        options: ["13 September 1948", "15 August 1947", "2 October 1948", "26 January 1948"],
+        answer: 0,
+        explanation: "Operation Polo commenced on 13 September 1948 and concluded within five days on 17 September 1948, ending Nizam rule."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Who was appointed Military Governor of Hyderabad to restore order after Operation Polo?",
+        options: ["Major General J.N. Chaudhuri", "Sardar Vallabhbhai Patel", "V.P. Menon", "K.M. Munshi"],
+        answer: 0,
+        explanation: "Major General J.N. Chaudhuri led the military action and was appointed Military Governor of Hyderabad after its integration into India."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "The first conference of the Andhra Mahasabha, a key platform against Nizam rule, was held in 1930 at which town?",
+        options: ["Jogipet", "Warangal", "Nizamabad", "Karimnagar"],
+        answer: 0,
+        explanation: "The inaugural Andhra Mahasabha conference was held at Jogipet in 1930, chaired by Suravaram Pratapa Reddy."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Madapati Hanumantha Rao, a founding leader of the Andhra Mahasabha, is popularly remembered by which honorific title?",
+        options: ["Andhra Pitamaha", "Telangana Loka Kavi", "Andhra Kesari", "Deshabhakta"],
+        answer: 0,
+        explanation: "Madapati Hanumantha Rao earned the title 'Andhra Pitamaha' (Grandfather of Andhra) for his role in organising the Andhra Mahasabha movement."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Between its founding in 1930 and 1945, how many sessions of the Andhra Mahasabha were organised across Hyderabad State?",
+        options: ["13", "5", "25", "8"],
+        answer: 0,
+        explanation: "The Andhra Mahasabha held thirteen conferences between 1930 and 1945, steadily building political awareness in Telangana."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Muhammad Quli Qutb Shah, builder of Charminar, later shifted the Qutb Shahi capital from Golconda Fort to found which new city?",
+        options: ["Hyderabad", "Warangal", "Bidar", "Secunderabad"],
+        answer: 0,
+        explanation: "Seeking more space and a better water supply, Muhammad Quli Qutb Shah founded the city of Hyderabad beside the Musi river around 1591."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Before founding his own dynasty, Sultan Quli Qutb-ul-Mulk served as a noble under which earlier Deccan sultanate?",
+        options: ["The Bahmani Sultanate", "The Mughal Empire", "The Delhi Sultanate", "The Vijayanagara Empire"],
+        answer: 0,
+        explanation: "Sultan Quli rose as a military commander under the Bahmani Sultanate before breaking away to found the independent Qutb Shahi kingdom at Golconda."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "The Mughal emperor Farrukhsiyar granted Mir Qamar-ud-din Khan the title 'Nizam-ul-Mulk' in which year?",
+        options: ["1713", "1724", "1687", "1591"],
+        answer: 0,
+        explanation: "Farrukhsiyar bestowed the title Nizam-ul-Mulk in 1713, well before Asaf Jah I established autonomous rule in the Deccan in 1724."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Which was the last and longest-reigning Nizam of Hyderabad, ruling until the state's integration in 1948?",
+        options: ["Mir Osman Ali Khan", "Sultan Quli Qutb-ul-Mulk", "Nizam-ul-Mulk Asaf Jah I", "Salar Jung I"],
+        answer: 0,
+        explanation: "Mir Osman Ali Khan, the seventh Nizam, ruled Hyderabad State from 1911 until its accession to India in 1948."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Under the Nizams, Hyderabad State held which distinction among India's princely states?",
+        options: ["It was the largest and most populous princely state", "It was the smallest princely state", "It had no army of its own", "It was governed directly by the British"],
+        answer: 0,
+        explanation: "Hyderabad State was the largest and most populous of over 500 princely states in British India, covering much of today's Telangana and parts of Karnataka and Maharashtra."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "The Razakars, a private militia notorious for violence during the Telangana struggle, were affiliated with which organisation?",
+        options: ["Majlis-e-Ittehad-ul-Muslimeen (MIM), under Qasim Rizvi", "The Communist Party of India", "The Indian National Congress", "The Andhra Mahasabha"],
+        answer: 0,
+        explanation: "The Razakars were the armed volunteer wing of the Majlis-e-Ittehad-ul-Muslimeen, led by Qasim Rizvi, and opposed Hyderabad's merger with India."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "The unpaid, forced-labour system imposed by feudal landlords and Deshmukhs on peasants in the Nizam's dominions was known as:",
+        options: ["Vetti", "Mulki", "Jagir", "Zamindari"],
+        answer: 0,
+        explanation: "The Vetti system compelled peasants to perform unpaid labour for landlords, and resentment against it fuelled the Telangana Armed Struggle."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "The Telangana Peasants' Armed Struggle (1946-1951) against feudal oppression was primarily organised and led by which political party?",
+        options: ["The Communist Party of India", "The Indian National Congress", "The Majlis-e-Ittehad-ul-Muslimeen", "The Hyderabad State Congress"],
+        answer: 0,
+        explanation: "The Communist Party of India spearheaded the armed peasant struggle against Deshmukhs and the Nizam's administration across Telangana villages."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Which Communist leader is most closely associated with directing the Telangana Peasant Armed Struggle?",
+        options: ["Puchalapalli Sundarayya", "Kaloji Narayana Rao", "Madapati Hanumantha Rao", "M. Kodandaram"],
+        answer: 0,
+        explanation: "Puchalapalli Sundarayya was a principal organiser and ideologue of the Telangana Peasant Armed Struggle led by the Communist Party."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "The Telangana Peasants' Armed Struggle, which began in 1946, was formally called off in which year?",
+        options: ["1951", "1948", "1956", "1946"],
+        answer: 0,
+        explanation: "The armed struggle continued for nearly five years before the Communist Party called it off in 1951."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Osmania University, a hub of Telangana's intellectual and political life, was established in which year?",
+        options: ["1918", "1948", "1956", "1969"],
+        answer: 0,
+        explanation: "Founded in 1918 by the Nizam's government, Osmania University later became a major centre of Telangana student activism."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "A distinctive feature of Osmania University in its early decades, unusual for Indian universities of the time, was that it used which language as its medium of instruction?",
+        options: ["Urdu", "Persian", "English only", "Telugu"],
+        answer: 0,
+        explanation: "Osmania University was notable for adopting Urdu as its medium of instruction, reflecting the administrative language of the Nizam's Hyderabad State."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "The Golconda Fort's fortifications are traditionally described as having how many main gateways?",
+        options: ["Eight", "Four", "Twelve", "Two"],
+        answer: 0,
+        explanation: "Golconda Fort's massive outer walls are traditionally described as pierced by eight gates, guarding the citadel and its famed diamond treasury."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Charminar's very name comes from its four grand structures of this type standing at each corner. What are they?",
+        options: ["Minarets", "Domes", "Gateways", "Fountains"],
+        answer: 0,
+        explanation: "'Charminar' literally means 'Four Minarets' in Urdu-Persian, referring to its four towering minarets at each corner of the monument."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "The historic city of Hyderabad, founded by the Qutb Shahis, developed along the banks of which river?",
+        options: ["The Musi River", "The Godavari River", "The Krishna River", "The Tungabhadra River"],
+        answer: 0,
+        explanation: "Hyderabad was founded on the banks of the Musi river in 1591, which remains central to the old city's geography."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "According to popular tradition, the Mecca Masjid in Hyderabad's old city takes its name from bricks made using soil brought from which holy city?",
+        options: ["Mecca", "Medina", "Karbala", "Najaf"],
+        answer: 0,
+        explanation: "Legend holds that some bricks used in constructing the Mecca Masjid were made from earth brought from Mecca, giving the mosque its name."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Bhongir Fort (Bhuvanagiri Fort), a striking monolithic-rock hill fort near Hyderabad, is traditionally attributed to a ruler of which dynasty?",
+        options: ["The Western Chalukyas", "The Qutb Shahis", "The Kakatiyas", "The Asaf Jahis"],
+        answer: 0,
+        explanation: "Bhongir Fort is traditionally credited to the Western Chalukya king Tribhuvana Malla (Vikramaditya VI) around the 10th-11th century, later strengthened by the Kakatiyas."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Sarojini Naidu, the celebrated poet and freedom fighter known as the 'Nightingale of India', was born in which Nizam-era city?",
+        options: ["Hyderabad", "Warangal", "Bidar", "Aurangabad"],
+        answer: 0,
+        explanation: "Sarojini Naidu was born in Hyderabad in 1879, within the Nizam's dominions, before going on to become a leading voice of the freedom movement."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Suravaram Pratapa Reddy, who chaired the first Andhra Mahasabha and founded 'Golconda Patrika', is often remembered as a pioneer of which field?",
+        options: ["Telugu journalism and social reform in Hyderabad State", "Kakatiya-era archaeology", "Hyderabad's railway network", "Nizam-era diamond trade"],
+        answer: 0,
+        explanation: "Suravaram Pratapa Reddy used journalism, through Golconda Patrika, to champion Telugu language, education and social reform under Nizam rule."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "The 1948 Indian military action against Hyderabad State is remembered by two names: 'Operation Polo' and which other common term?",
+        options: ["The Police Action", "The Long March", "The Quit India Movement", "The Freedom Charter"],
+        answer: 0,
+        explanation: "Within India, the 1948 operation is most commonly referred to simply as 'the Police Action' that integrated Hyderabad State."
+      },
+      {
+        eraName: "Era 2: Peasant Struggle",
+        question: "Instead of immediately joining the Indian Union in 1947, the Nizam's government signed which kind of agreement with India, delaying integration until Operation Polo in 1948?",
+        options: ["A Standstill Agreement", "A Six-Point Formula", "A Gentlemen's Agreement", "A Zonal Agreement"],
+        answer: 0,
+        explanation: "Hyderabad State signed a Standstill Agreement with India in November 1947 to maintain the status quo, but tensions over the Nizam's stance eventually led to Operation Polo."
+      },
+
+      // ------------------------------------------------------------------------
+      // ERA 3: 1969 MOVEMENT (Questions 21 - 30)
+      // ------------------------------------------------------------------------
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "Which landmark slogan encapsulated the key demands of the 1969 Telangana Movement?",
+        options: ["Jai Andhra", "Neelu, Nidhulu, Niyamakalu", "Jai Hind", "Satyamev Jayate"],
+        answer: 1,
+        explanation: "'Neelu, Nidhulu, Niyamakalu' (Water, Funds, & Employment) demanded equitable rights for Telangana."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "Where is the historic 'Gun Park' Amara Veerula Stupam (Martyrs Memorial) situated?",
+        options: ["Opposite State Assembly, Hyderabad", "Osmania University Campus", "Charminar Square", "Warangal Fort"],
+        answer: 0,
+        explanation: "The Amara Veerula Stupam was established at Gun Park opposite the Assembly to honor 369 martyrs of 1969."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "Which university campus was the epicenter of student activism during the 1969 Agitation?",
+        options: ["Kakatiya University", "Osmania University", "Palamuru University", "Nizam College"],
+        answer: 1,
+        explanation: "Osmania University Arts College building and campus served as the intellectual core of the movement."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "Who was the student leader who began an indefinite hunger strike in Khammam in January 1969?",
+        options: ["Ravindranath", "Mallikarjun", "K. Chandra Shekhar Rao", "Keshava Rao"],
+        answer: 0,
+        explanation: "Kolipaka Ravindranath's hunger strike in Khammam demanding implementation of safeguards sparked the 1969 movement."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "Which agreement signed in 1956 aimed to protect Telangana's political and economic safeguards?",
+        options: ["Gentlemen's Agreement", "Sri Krishna Agreement", "Six-Point Formula", "TDP Accord"],
+        answer: 0,
+        explanation: "The Gentlemen's Agreement was signed in New Delhi on Feb 20, 1956 before merging Andhra and Telangana."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "Which political party was formed in 1969 under Dr. M. Channa Reddy to spearhead statehood?",
+        options: ["Telangana Praja Samithi (TPS)", "TRS", "Telangana Jana Sabha", "Praja Rajyam"],
+        answer: 0,
+        explanation: "TPS won 10 out of 14 Lok Sabha seats in Telangana in 1971, proving massive public mandate for statehood."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "Who authored the famous revolutionary song 'Podustunna Podudepudda'?",
+        options: ["Gaddar", "Ande Sri", "Goreti Venkanna", "Vimalakka"],
+        answer: 0,
+        explanation: "Gaddar (Gummadi Vittal Rao) penned and performed iconic folk songs that energized public conscience."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "Which Committee was appointed by the Union Government in 1969 to estimate Telangana surplus funds?",
+        options: ["Justice Bhargava Committee", "Wanchoo Committee", "Fazal Ali Commission", "Srikrishna Committee"],
+        answer: 0,
+        explanation: "Justice Bhargava Committee was set up to calculate financial revenue surpluses belonging to Telangana."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "What package was announced by PM Indira Gandhi in April 1969 to address Telangana grievances?",
+        options: ["8-Point Formula", "6-Point Formula", "5-Point Plan", "10-Point Charter"],
+        answer: 0,
+        explanation: "The 8-Point Formula was announced in Parliament on April 11, 1969 to implement development measures."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "Who was the first chairman of the Telangana Regional Committee (TRC) established in 1958?",
+        options: ["K.V. Ranga Reddy", "Hayagrivachari", "P.V. Narasimha Rao", "J.V. Nengappa"],
+        answer: 0,
+        explanation: "K.V. Ranga Reddy served as the inaugural chairman of the statutory Telangana Regional Committee."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "The Supreme Court delivered its judgment upholding the constitutionality of the Mulki Rules on which date?",
+        options: ["3 October 1972", "9 December 1969", "21 September 1973", "30 December 1985"],
+        answer: 0,
+        explanation: "On 3 October 1972, the Supreme Court held the Nizam-era Mulki Rules, which reserved local jobs for Telangana residents, to be constitutionally valid."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "The Supreme Court's 1972 verdict upholding the Mulki Rules directly triggered which counter-agitation in coastal Andhra and Rayalaseema?",
+        options: ["The Jai Andhra Movement", "The 1969 Telangana Movement", "The Non-cooperation Movement", "The Vishalandhra Mahasabha protests"],
+        answer: 0,
+        explanation: "Angered by the Mulki Rules verdict, the Jai Andhra Movement of 1972-73 demanded a separate Andhra state, mirroring the earlier Telangana agitation."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "The Jai Andhra Movement of 1972-73 primarily sought which outcome?",
+        options: ["A separate state of Andhra, carved away from Telangana", "A separate state of Telangana", "Reunification of Hyderabad State", "Abolition of the zonal system"],
+        answer: 0,
+        explanation: "The Jai Andhra Movement demanded that the coastal Andhra and Rayalaseema regions be separated from Telangana into their own state."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "To resolve the standoff after the Jai Andhra agitation, the Centre and state leaders agreed on the Six-Point Formula on which date?",
+        options: ["21 September 1973", "9 December 1969", "1 November 1956", "3 October 1972"],
+        answer: 0,
+        explanation: "The Six-Point Formula, a political settlement addressing regional imbalances, was agreed upon on 21 September 1973."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "The Six-Point Formula of 1973 was given constitutional force through which amendment?",
+        options: ["The 32nd Constitutional Amendment Act, 1973", "The 42nd Constitutional Amendment Act", "The 7th Constitutional Amendment Act", "The 73rd Constitutional Amendment Act"],
+        answer: 0,
+        explanation: "The 32nd Amendment inserted Article 371-D into the Constitution, giving the Six-Point Formula's safeguards legal and constitutional standing."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "Article 371-D, inserted to implement the Six-Point Formula, provides for local cadres and educational safeguards along with which dispute-resolution body?",
+        options: ["An Administrative Tribunal", "The Telangana Regional Committee", "The Srikrishna Committee", "The Zonal Development Board"],
+        answer: 0,
+        explanation: "Article 371-D established a special Administrative Tribunal to adjudicate disputes over public employment and educational admissions across the state's zones."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "Despite the Six-Point Formula, large-scale violations of local recruitment rules led the state government to issue the landmark Government Order (G.O.) 610 in which year?",
+        options: ["1985", "1973", "1969", "1956"],
+        answer: 0,
+        explanation: "G.O. 610, issued on 30 December 1985, sought to correct years of unauthorised non-local recruitment in Telangana that had continued despite the Six-Point Formula."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "Which Chief Minister's government issued Government Order 610 in December 1985?",
+        options: ["N.T. Rama Rao", "M. Channa Reddy", "P.V. Narasimha Rao", "Burgula Ramakrishna Rao"],
+        answer: 0,
+        explanation: "G.O. 610 was issued under the chief ministership of N.T. Rama Rao, following sustained pressure from Telangana's non-gazetted employees."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "G.O. 610 aimed to repatriate non-local employees who had been irregularly recruited in Telangana since which year?",
+        options: ["1975", "1956", "1985", "1946"],
+        answer: 0,
+        explanation: "G.O. 610 targeted non-local appointments made in violation of zonal rules from 1975 onward, an issue that had built up for a decade."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "It was estimated that roughly how many non-local employees had been irregularly recruited in the Telangana region between 1973 and 1985?",
+        options: ["About 59,000", "About 5,900", "About 590", "About 590,000"],
+        answer: 0,
+        explanation: "Studies cited around 59,000 unauthorised non-local recruitments in Telangana over the decade, prompting the government to issue G.O. 610."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "Under G.O. 610, all irregularly recruited non-local employees were to be repatriated to their native zones by which deadline?",
+        options: ["31 March 1986", "31 December 1985", "1 November 1986", "2 June 1986"],
+        answer: 0,
+        explanation: "The order set a deadline of 31 March 1986 for completing the repatriation process, though implementation was later criticised as weak."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "A key criticism of G.O. 610 was that its implementation faltered mainly because:",
+        options: ["Transferred employees moved courts and governments showed leniency in enforcing it", "It was withdrawn within a week of issue", "The Governor refused to sign it", "No non-local employees were ever identified"],
+        answer: 0,
+        explanation: "Many affected employees challenged their transfers in court, and successive state governments were seen as lax in enforcing the order's provisions."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "Kaloji Narayana Rao, whose pen is honoured as a game power-up in this app, is popularly remembered by which title?",
+        options: ["Telangana's 'Loka Kavi' (People's Poet)", "The 'Andhra Pitamaha'", "The 'Nightingale of Telangana'", "Hyderabad's 'Poet Laureate'"],
+        answer: 0,
+        explanation: "Kaloji Narayana Rao's fearless, people-centred poetry earned him the enduring title Telangana Loka Kavi, the region's own People's Poet."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "Kaloji Narayana Rao was honoured with which national civilian award, one of India's highest, in 2013?",
+        options: ["Padma Vibhushan", "Bharat Ratna", "Padma Shri", "Jnanpith Award"],
+        answer: 0,
+        explanation: "Kaloji Narayana Rao was conferred the Padma Vibhushan in 2013 in recognition of his lifelong contribution to Telugu literature and the Telangana movement."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "The 1956 Gentlemen's Agreement, meant to safeguard Telangana ahead of merger with Andhra, included a commitment on ministerial balance, proposing that:",
+        options: ["A Telangana leader would hold the post of Deputy Chief Minister if the Chief Minister was from Andhra", "Telangana would always control the Home Ministry", "Andhra ministers could not serve in Telangana districts", "The capital would rotate annually between regions"],
+        answer: 0,
+        explanation: "Among its safeguards, the Gentlemen's Agreement proposed that if the Chief Minister came from the Andhra region, a Telangana leader would serve as Deputy Chief Minister, and vice versa."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "Besides ministerial balance, the Gentlemen's Agreement of 1956 also promised safeguards for Telangana in which sphere?",
+        options: ["Public sector jobs and college admissions for local residents", "Control over national defence policy", "Independent currency for the region", "A separate national language"],
+        answer: 0,
+        explanation: "The Agreement promised domicile-based protections in employment and education to reassure Telangana that its interests would not be overwhelmed after merger."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "The Telangana Regional Committee (TRC), created under the 1956 safeguards, was eventually dissolved following the introduction of the:",
+        options: ["Six-Point Formula and Article 371-D arrangement in 1973", "Government Order 610 in 1985", "Srikrishna Committee report in 2010", "Andhra Pradesh Reorganisation Act in 2014"],
+        answer: 0,
+        explanation: "As the Six-Point Formula and Article 371-D introduced a new zonal and local-cadre framework in 1973, the older Telangana Regional Committee was wound up."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "Kakatiya University in Warangal was established, partly in response to Telangana's demand for greater access to higher education, in which year?",
+        options: ["1976", "1956", "1969", "1985"],
+        answer: 0,
+        explanation: "Kakatiya University was founded in 1976, giving Telangana students in and around Warangal a dedicated regional university."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "The Regional Engineering College at Warangal (today NIT Warangal), a landmark technical institute for the region, was established in which year?",
+        options: ["1959", "1969", "1976", "1985"],
+        answer: 0,
+        explanation: "Set up in 1959 as one of India's first Regional Engineering Colleges, the Warangal institute later became the National Institute of Technology, Warangal."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "The core economic grievance behind both the 1969 movement and later agitations was that Telangana's resources, including its coal reserves, were seen as being exploited without proportionate local benefit. Which major coalfield lies in Telangana?",
+        options: ["Singareni Collieries", "Jharia Coalfield", "Korba Coalfield", "Raniganj Coalfield"],
+        answer: 0,
+        explanation: "The Singareni Collieries in Telangana were a major source of coal revenue, and control over their employment and benefits was a recurring regional grievance."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "Dasaradhi Krishnamacharyulu, celebrated poet of the Telangana movement, was honoured in later life as the 'Asthana Kavi' (Poet Laureate) of which state?",
+        options: ["Andhra Pradesh", "Telangana", "Karnataka", "Tamil Nadu"],
+        answer: 0,
+        explanation: "Dasaradhi Krishnamacharyulu, who wrote stirring verses during his imprisonment, was later honoured as the Asthana Kavi of undivided Andhra Pradesh."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "The 1969 Telangana agitation's core economic demands, water, funds and jobs, reflected concerns that surplus Telangana revenues were being diverted to develop which other region?",
+        options: ["Coastal Andhra and Rayalaseema", "Bombay Presidency", "Madras Presidency", "Hyderabad city alone"],
+        answer: 0,
+        explanation: "Agitators argued that funds and irrigation benefits generated from Telangana were disproportionately spent on developing coastal Andhra and Rayalaseema."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "The Justice Bhargava Committee, appointed after the 1969 movement, was primarily tasked with estimating:",
+        options: ["Telangana's surplus revenue that should have been reinvested in the region", "The number of martyrs of the movement", "The boundaries of a new Telangana state", "The medium of instruction for Osmania University"],
+        answer: 0,
+        explanation: "The Bhargava Committee was set up to calculate how much of Telangana's financial surplus had not been utilised for the region's own development, as promised in 1956."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "The 8-Point Formula, announced by the central government in April 1969 to address Telangana's grievances, was ultimately seen by agitators as:",
+        options: ["Inadequate, failing to satisfy the movement's core demands", "A complete resolution that ended the movement immediately", "A plan to merge Telangana with Karnataka", "A proposal to shift the capital to Warangal"],
+        answer: 0,
+        explanation: "Despite its promises, the 8-Point Formula was widely seen as insufficient, and agitation for a separate Telangana continued well beyond 1969."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "Telangana Praja Samithi's strong performance in the 1971 Lok Sabha elections is best described as:",
+        options: ["A near-sweep of Telangana's seats, signalling overwhelming public support for statehood", "A narrow defeat in most constituencies", "A boycott with no candidates fielded", "A alliance loss to the Jai Andhra movement"],
+        answer: 0,
+        explanation: "TPS's dominant showing in the 1971 Lok Sabha elections across Telangana constituencies demonstrated the depth of public support the statehood demand had gathered."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "Following its electoral success, the Telangana Praja Samithi eventually merged with which national party in the early 1970s?",
+        options: ["The Indian National Congress", "The Communist Party of India", "The Bharatiya Jana Sangh", "The Swatantra Party"],
+        answer: 0,
+        explanation: "TPS merged into the Indian National Congress in the early 1970s after the Centre offered the Six-Point Formula as a settlement of Telangana's grievances."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "The 1969 agitation is widely regarded as the first mass movement in independent India to demand:",
+        options: ["A separate state carved out on grounds of regional economic neglect within an already Telugu-speaking state", "A new national language", "Reservation for women in legislatures", "Abolition of the zamindari system"],
+        answer: 0,
+        explanation: "Unlike the earlier linguistic-reorganisation movements, the 1969 Telangana agitation demanded separation from a state that shared its own language, based on regional economic neglect."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "The Gun Park martyrs' memorial in Hyderabad honours those who died during the 1969 agitation and stands opposite which important building?",
+        options: ["The Andhra Pradesh (Telangana) State Legislative Assembly", "Golconda Fort", "Charminar", "Osmania University Arts College"],
+        answer: 0,
+        explanation: "The Gun Park memorial was deliberately located opposite the state Assembly building, a constant reminder to lawmakers of the movement's sacrifices."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "The employees' and students' 'Joint Action Committees' (JACs), a organising model later reused in the 2000s Telangana movement, first became prominent during which earlier phase of agitation?",
+        options: ["The 1969 Telangana Movement", "The Qutb Shahi period", "The Kakatiya administration", "The Ikshvaku era"],
+        answer: 0,
+        explanation: "The joint-committee model of coordinating students, employees and political groups, seen in the 1969 movement, was later revived by the Telangana Joint Action Committee (TJAC) after 2009."
+      },
+      {
+        eraName: "Era 3: 1969 Movement",
+        question: "The 'Zonal System' at the heart of Telangana's job-safeguard debates divided the state into zones mainly to regulate:",
+        options: ["Local recruitment and employment quotas in government jobs", "Electoral constituency boundaries", "Railway administrative divisions", "Weather-forecasting regions"],
+        answer: 0,
+        explanation: "The zonal system, formalised through the Six-Point Formula and Article 371-D, reserved a share of local government jobs for residents of each zone, including Telangana."
+      },
+
+      // ------------------------------------------------------------------------
+      // ERA 4: 2001-2014 & MODERN STATEHOOD (Questions 31 - 40+)
+      // ------------------------------------------------------------------------
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "What massive public rally was held along Tank Bund, Hyderabad on March 10, 2011?",
+        options: ["Million March", "Chalo Delhi", "Sagara Haram", "Vanta Varpu"],
+        answer: 0,
+        explanation: "The 'Million March' gathered hundreds of thousands of citizens along Tank Bund demonstrating unified support."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "Which historic non-cooperation strike shut down public machinery across Telangana in late 2011?",
+        options: ["Sakala Janula Samakya", "Rasta Roko", "Rail Roko", "Palle Palle Pattalu Ekki"],
+        answer: 0,
+        explanation: "The 42-day Sakala Janula Samakya (All-People's Strike) united workers, teachers, and employees peacefully."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "On which date did Telangana officially emerge as the 29th State of India?",
+        options: ["November 1, 1956", "June 2, 2014", "February 18, 2014", "August 15, 2013"],
+        answer: 1,
+        explanation: "June 2, 2014 marks Telangana Statehood Day, fulfilling a six-decade democratic struggle."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "Who penned the official state song 'Jaya Jaya He Telangana Janani Jayaketanam'?",
+        options: ["Ande Sri", "Goreti Venkanna", "Deshapathi Srinivas", "Suddala Ashok Teja"],
+        answer: 0,
+        explanation: "Poet Ande Sri composed the inspiring state anthem celebrating Telangana's culture and geography."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "Which high-level committee headed by a former Supreme Court judge was formed in 2010 to study statehood options?",
+        options: ["Srikrishna Committee", "Pranab Mukherjee Committee", "Fazal Ali Commission", "Bhargava Committee"],
+        answer: 0,
+        explanation: "The 5-member Justice B.N. Srikrishna Committee held consultations across all districts before submitting its report."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "Which popular cultural expression featuring song, dance, and speeches energized villages during 2001-2014?",
+        options: ["Dhoom Dham", "Perini Thandavam", "Bhatukamma Yatra", "Yakshaganam"],
+        answer: 0,
+        explanation: "'Telangana Dhoom Dham' brought artists, poets, and folk singers together to spread statehood awareness."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "What is the official State Bird of Telangana, symbolizing prosperity and good fortune?",
+        options: ["Palapitta (Indian Roller)", "Pavu (Pigeon)", "Rama Chiluka (Parrot)", "Nemali (Peacock)"],
+        answer: 0,
+        explanation: "Palapitta (Indian Roller) is the official State Bird of Telangana."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "Which beautiful yellow flower used prominently in Bathukamma festival is the State Flower of Telangana?",
+        options: ["Tangedu Puvvu", "Gunugu Puvvu", "Thamara Puvvu", "Malle Puvvu"],
+        answer: 0,
+        explanation: "Tangedu Puvvu (Senna auriculata) is the official State Flower of Telangana."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "What human chain event surrounded the Hussain Sagar lake on September 30, 2012?",
+        options: ["Sagara Haram", "Million March", "Chalo Assembly", "Sadak Bandh"],
+        answer: 0,
+        explanation: "Sagara Haram formed a continuous human chain around Hussain Sagar Lake to demand parliament legislation."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "In which month and year was the Andhra Pradesh Reorganisation Act passed in the Indian Parliament?",
+        options: ["February 2014", "June 2014", "December 2013", "August 2014"],
+        answer: 0,
+        explanation: "The Parliament passed the historic AP Reorganisation Act in February 2014, paving the way for statehood."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "The Telangana Rashtra Samithi (TRS) was founded by K. Chandrashekar Rao (KCR) on which date?",
+        options: ["27 April 2001", "9 December 2009", "2 June 2014", "3 October 2013"],
+        answer: 0,
+        explanation: "KCR launched the Telangana Rashtra Samithi on 27 April 2001 with the single-point agenda of forming a separate Telangana state."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "Before founding the TRS, K. Chandrashekar Rao resigned from which position in the undivided Andhra Pradesh Assembly?",
+        options: ["Deputy Speaker", "Speaker", "Leader of the Opposition", "Chief Minister"],
+        answer: 0,
+        explanation: "KCR resigned as Deputy Speaker of the Andhra Pradesh Legislative Assembly, along with his MLA seat, before launching the TRS."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "KCR began his famous fast-unto-death demanding statehood on 29 November 2009, launching it from which town?",
+        options: ["Siddipet", "Karimnagar", "Warangal", "Khammam"],
+        answer: 0,
+        explanation: "KCR started his indefinite fast in his hometown of Siddipet on 29 November 2009, before being arrested and later moved to Hyderabad."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "During his 2009 fast, KCR was shifted to which Hyderabad hospital as his health declined?",
+        options: ["NIMS (Nizam's Institute of Medical Sciences)", "Osmania General Hospital", "Apollo Hospital", "Gandhi Hospital"],
+        answer: 0,
+        explanation: "KCR was admitted to NIMS in Hyderabad on 3 December 2009 as his fast-unto-death continued to draw national attention."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "Which rallying slogan became popular across Telangana during KCR's 2009 fast?",
+        options: ["'Telangana vachchudo, KCR sachhudo'", "'Neelu, Nidhulu, Niyamakalu'", "'Jai Andhra'", "'Vande Mataram'"],
+        answer: 0,
+        explanation: "The slogan, meaning 'Either Telangana is born, or KCR dies', captured the intensity of public sentiment during the 2009 fast."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "Which Union Home Minister announced, late on 9 December 2009, that the process of forming a separate Telangana state would begin?",
+        options: ["P. Chidambaram", "Sardar Vallabhbhai Patel", "L.K. Advani", "Pranab Mukherjee"],
+        answer: 0,
+        explanation: "P. Chidambaram's midnight statement on 9 December 2009, made to persuade KCR to end his fast, marked a turning point in the statehood movement."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "The Telangana Joint Action Committee (TJAC), which coordinated the final phase of the movement, was formed on which date?",
+        options: ["24 December 2009", "9 December 2009", "27 April 2001", "3 October 2013"],
+        answer: 0,
+        explanation: "TJAC was formed on 24 December 2009 as an umbrella platform uniting political parties, students and employee unions behind the statehood demand."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "Who served as the chairman/convener of the Telangana Joint Action Committee (TJAC)?",
+        options: ["Prof. M. Kodandaram", "K. Chandrashekar Rao", "P. Chidambaram", "Marri Channa Reddy"],
+        answer: 0,
+        explanation: "Professor M. Kodandaram led TJAC, coordinating major protest actions such as the Sakala Janula Samme and the Million March."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "The Congress-led UPA Coordination Committee formally recommended the creation of a separate Telangana state on which date?",
+        options: ["3 October 2013", "9 December 2009", "27 April 2001", "18 February 2014"],
+        answer: 0,
+        explanation: "On 3 October 2013, the UPA's coordination committee cleared the proposal to form Telangana, setting the legislative process in motion."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "The Telangana Bill (Andhra Pradesh Reorganisation Bill) was passed by the Lok Sabha on which date?",
+        options: ["18 February 2014", "20 February 2014", "1 March 2014", "2 June 2014"],
+        answer: 0,
+        explanation: "The Lok Sabha passed the bifurcation bill on 18 February 2014, two days before it cleared the Rajya Sabha."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "The Telangana Bill was passed by the Rajya Sabha on which date?",
+        options: ["20 February 2014", "18 February 2014", "1 March 2014", "3 October 2013"],
+        answer: 0,
+        explanation: "The Rajya Sabha cleared the Andhra Pradesh Reorganisation Bill on 20 February 2014, following its passage in the Lok Sabha."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "Who, as President of India, gave assent to the Andhra Pradesh Reorganisation Act on 1 March 2014?",
+        options: ["Pranab Mukherjee", "A.P.J. Abdul Kalam", "Pratibha Patil", "Ram Nath Kovind"],
+        answer: 0,
+        explanation: "President Pranab Mukherjee signed the Andhra Pradesh Reorganisation Bill into law on 1 March 2014, clearing the final hurdle to statehood."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "Under the Andhra Pradesh Reorganisation Act 2014, how many seats did the new Telangana Legislative Assembly receive?",
+        options: ["119", "175", "147", "100"],
+        answer: 0,
+        explanation: "The Act allotted 119 Assembly seats to Telangana and 175 to the residual state of Andhra Pradesh."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "Under the Andhra Pradesh Reorganisation Act 2014, how many Lok Sabha seats were allotted to Telangana?",
+        options: ["17", "25", "42", "10"],
+        answer: 0,
+        explanation: "Telangana received 17 Lok Sabha seats under the Reorganisation Act, while the residual Andhra Pradesh retained 25."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "Under the Andhra Pradesh Reorganisation Act 2014, how many Rajya Sabha seats were allotted to Telangana?",
+        options: ["7", "11", "17", "4"],
+        answer: 0,
+        explanation: "Telangana was allotted 7 Rajya Sabha seats, against 11 for the residual state of Andhra Pradesh."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "Following bifurcation, for how many years was Hyderabad designated as the common capital of both Telangana and Andhra Pradesh?",
+        options: ["10 years", "5 years", "2 years", "20 years"],
+        answer: 0,
+        explanation: "The Reorganisation Act provided for Hyderabad to serve as the joint capital of both states for a maximum of 10 years."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "How many districts did the new state of Telangana comprise at its formation on 2 June 2014?",
+        options: ["10", "23", "33", "13"],
+        answer: 0,
+        explanation: "Telangana was formed with 10 districts: Adilabad, Karimnagar, Medak, Nizamabad, Warangal, Ranga Reddy, Nalgonda, Mahbubnagar, Khammam and Hyderabad."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "Which of these districts was NOT among the original 10 districts of Telangana at its formation in 2014?",
+        options: ["Kurnool", "Nalgonda", "Khammam", "Adilabad"],
+        answer: 0,
+        explanation: "Kurnool lies in the Rayalaseema region and remained part of Andhra Pradesh; it was never one of Telangana's original 10 districts."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "The official state animal of Telangana, formally notified after statehood, is the:",
+        options: ["Jinka (Deer)", "Nemali (Peacock)", "Puli (Tiger)", "Enugu (Elephant)"],
+        answer: 0,
+        explanation: "The Jinka, or spotted deer, was declared Telangana's official state animal as part of the new state's set of cultural symbols."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "The official state tree of Telangana, closely linked to the Dasara festival, is the:",
+        options: ["Jammi Chettu", "Neem", "Banyan", "Tamarind"],
+        answer: 0,
+        explanation: "The Jammi tree was adopted as Telangana's state tree; it is traditionally worshipped on Dasara for prosperity and good fortune."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "Which classical dance form, said to have evolved during Kakatiya rule, was adopted as Telangana's official state dance?",
+        options: ["Perini Sivatandavam", "Bharatanatyam", "Kuchipudi", "Kathak"],
+        answer: 0,
+        explanation: "Perini Sivatandavam, the vigorous 'dance of warriors' traced to the Kakatiya era, was recognised as Telangana's official classical dance."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "Sighting the Palapitta (Indian Roller, Telangana's state bird) and worshipping the Jammi tree are both associated with which festival?",
+        options: ["Dasara (Vijayadashami)", "Bathukamma", "Ugadi", "Sankranti"],
+        answer: 0,
+        explanation: "On Dasara, spotting the Palapitta is considered a good omen and people traditionally worship the Jammi tree for prosperity."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "The Tangedu flower, Telangana's state flower, is most closely associated with which festival, where it is used to decorate floral stacks?",
+        options: ["Bathukamma", "Bonalu", "Ugadi", "Dasara"],
+        answer: 0,
+        explanation: "Tangedu flowers form a key part of the Bathukamma festival, where they are layered together with other flowers into decorative floral stacks."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "Telangana's four official state symbols, bird, animal, tree and flower, were formally notified by the government through a Government Order issued in which year?",
+        options: ["2014", "2001", "2009", "1985"],
+        answer: 0,
+        explanation: "Shortly after statehood, the Telangana government formally announced its state bird, animal, tree and flower through a Government Order in November 2014."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "The 42-day Sakala Janula Samme (all-people's strike) of 2011 is best described as:",
+        options: ["A non-cooperation strike uniting workers, teachers and employees across Telangana", "A one-day symbolic protest", "A strike limited only to Hyderabad city government offices", "A strike organised solely by students"],
+        answer: 0,
+        explanation: "The Sakala Janula Samme brought together employees, teachers and workers from across sectors in a sustained 42-day non-cooperation strike demanding statehood."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "The Justice B.N. Srikrishna Committee, set up in 2010 to study the Telangana statehood question, consulted people across:",
+        options: ["All districts of undivided Andhra Pradesh", "Only Hyderabad city", "Only the ten Telangana districts", "Only members of Parliament"],
+        answer: 0,
+        explanation: "The five-member Srikrishna Committee undertook wide consultations across all districts of undivided Andhra Pradesh before submitting its report."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "In 2013, many Telangana-region Members of Parliament and MLAs applied pressure on the Centre for statehood by:",
+        options: ["Resigning en masse from their seats", "Crossing over to opposition parties", "Boycotting all Assembly sessions permanently", "Forming a rival central government"],
+        answer: 0,
+        explanation: "A wave of resignations by Telangana MPs and MLAs in 2013 was used as a pressure tactic to push the Centre toward announcing statehood."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "The Telangana state anthem 'Jaya Jaya He Telangana' was composed by poet Ande Sri; it celebrates the region's:",
+        options: ["Culture, geography and identity", "Cricket achievements", "Film industry", "Space research programs"],
+        answer: 0,
+        explanation: "Ande Sri's anthem is a tribute to Telangana's land, culture and hard-won identity, and became the state's official anthem after 2014."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "The 'Telangana Dhoom Dham' cultural programs, mixing folk song, dance and speeches, primarily served which purpose during 2001-2014?",
+        options: ["Spreading statehood awareness through village-level cultural mobilisation", "Promoting Hyderabad's IT industry", "Celebrating the Nizam's legacy", "Marking Osmania University's founding day"],
+        answer: 0,
+        explanation: "Dhoom Dham events brought poets, folk artists and singers together to carry the statehood message directly into villages across the region."
+      },
+      {
+        eraName: "Era 4: 2001-2014 Final Push",
+        question: "Which north Telangana district, known for its textile and beedi industries, was among the 10 districts forming Telangana at its 2014 formation?",
+        options: ["Nizamabad", "Guntur", "Kurnool", "Chittoor"],
+        answer: 0,
+        explanation: "Nizamabad, long known for its textile weaving and beedi-rolling industries, was one of the original 10 districts of Telangana in 2014."
+      }
+    ];
+
+
+    /* Get current era index (0 to 3) - progresses every 10 questions */
+    function getEraIndex() {
+      return Math.floor(state.currentQIndex / 10) % 4;
+    }
+
+    /* Each era has a pool of 40 questions; every playthrough draws a fresh
+       random sample of 10 per era (shuffled), so repeat plays see new questions
+       and a new order without changing the fixed 40-question, 4-era game length. */
+    const QUESTIONS_PER_ERA_POOL = 40;
+    const QUESTIONS_PER_ERA_SESSION = 10;
+    const ERA_COUNT = 4;
+
+    function shuffleArray(arr) {
+      const copy = arr.slice();
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function buildSessionQuestions() {
+      const session = [];
+      for (let era = 0; era < ERA_COUNT; era++) {
+        const pool = GAME_QUESTIONS.slice(era * QUESTIONS_PER_ERA_POOL, (era + 1) * QUESTIONS_PER_ERA_POOL);
+        const picked = shuffleArray(pool).slice(0, QUESTIONS_PER_ERA_SESSION);
+        session.push(...picked);
+      }
+      return session;
+    }
+
+    // Canvas Setup
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let scrollX = 0;
+
+    function resizeCanvas() {
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // PARALLAX BACKGROUND & ERA-SPECIFIC MONUMENTS RENDERER
+    function drawGameScene() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const w = canvas.width;
+      const h = canvas.height;
+      const currentEra = getEraIndex();
+
+      // 1. Sky & Background Lighting according to Era
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.75);
+      if (currentEra === 0) { // Kakatiya Golden Dawn
+        skyGrad.addColorStop(0, '#0f172a');
+        skyGrad.addColorStop(1, '#312e81');
+      } else if (currentEra === 1) { // Nizam / Heritage Sunset
+        skyGrad.addColorStop(0, '#18181b');
+        skyGrad.addColorStop(1, '#4c1d95');
+      } else if (currentEra === 2) { // 1969 Movement Dusk
+        skyGrad.addColorStop(0, '#09090b');
+        skyGrad.addColorStop(1, '#831843');
+      } else { // Era 4: Modern Telangana Bright Future
+        skyGrad.addColorStop(0, '#020617');
+        skyGrad.addColorStop(1, '#0284c7');
+      }
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Clouds
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+      for (let i = 0; i < 4; i++) {
+        const cx = (scrollX * 0.2 + i * 220) % (w + 200) - 100;
+        ctx.fillRect(cx, 20 + (i % 2) * 18, 65, 14);
+        ctx.fillRect(cx + 12, 12 + (i % 2) * 18, 42, 26);
+      }
+
+      // 2. Parallax Distant Landmarks - SPECIFIC TO CURRENT ERA
+      const landmarkX1 = (w * 0.15 - scrollX * 0.4) % (w + 420);
+      const landmarkX2 = (w * 0.65 - scrollX * 0.4) % (w + 420);
+
+      // Render monuments dynamically based on Era index
+      if (currentEra === 0) {
+        // ERA 1: Kakatiya Kala Thoranam & Ramappa Temple
+        drawKakatiyaThoranam(ctx, landmarkX1, h - 85);
+        drawRamappaTemple(ctx, landmarkX2, h - 95);
+      } else if (currentEra === 1) {
+        // ERA 2: Charminar & Golconda Fort
+        drawCharminar(ctx, landmarkX1, h - 110);
+        drawGolcondaFort(ctx, landmarkX2, h - 85);
+      } else if (currentEra === 2) {
+        // ERA 3: Gun Park Amara Veerula Stupam & Osmania University
+        drawGunParkStupam(ctx, landmarkX1, h - 95);
+        drawOUBuilding(ctx, landmarkX2, h - 95);
+      } else {
+        // ERA 4: Dr. B.R. Ambedkar Secretariat & Hussain Sagar Buddha Statue
+        drawTelanganaSecretariat(ctx, landmarkX1, h - 100);
+        drawBuddhaStatue(ctx, landmarkX2, h - 90);
+      }
+
+      // 3. Ground & Cobblestone Street
+      const groundY = h - 35;
+      ctx.fillStyle = '#1e1b4b';
+      ctx.fillRect(0, groundY, w, 35);
+      ctx.fillStyle = '#4338ca';
+      ctx.fillRect(0, groundY, w, 4);
+
+      // Cobblestone tiles
+      ctx.fillStyle = '#312e81';
+      for (let x = -(scrollX % 32); x < w; x += 32) {
+        ctx.fillRect(x, groundY + 12, 16, 4);
+        ctx.fillRect(x + 16, groundY + 22, 16, 4);
+      }
+
+      // 4. Marching Procession
+      drawMarchingProcession(ctx, groundY, scrollX);
+
+      // Animation Loop Call
+      scrollX += 1.2;
+      requestAnimationFrame(drawGameScene);
+    }
+
+
+    // ERA 1: KAKATIYA KALA THORANAM
+    function drawKakatiyaThoranam(ctx, x, y) {
+      ctx.fillStyle = '#64748b';
+      ctx.fillRect(x, y, 16, 55);
+      ctx.fillRect(x + 70, y, 16, 55);
+      ctx.fillRect(x - 10, y - 12, 106, 16);
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(x - 5, y - 20, 96, 8);
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(x + 4, y + 10, 8, 35);
+      ctx.fillRect(x + 74, y + 10, 8, 35);
+    }
+
+    // ERA 1: RAMAPPA TEMPLE
+    function drawRamappaTemple(ctx, x, y) {
+      // Platform Base
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(x, y + 35, 90, 20);
+      // Main Sanctum Tower (Vimana)
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(x + 20, y + 10, 50, 25);
+      ctx.fillRect(x + 28, y - 5, 34, 15);
+      ctx.fillRect(x + 35, y - 18, 20, 13);
+      // Kalasam Peak
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(x + 42, y - 25, 6, 7);
+      // Carved Pillars
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(x + 10, y + 25, 6, 12);
+      ctx.fillRect(x + 74, y + 25, 6, 12);
+    }
+
+    // ERA 2: CHARMINAR
+    function drawCharminar(ctx, x, y) {
+      ctx.fillStyle = '#d4b996';
+      // Main Square Base
+      ctx.fillRect(x + 15, y + 25, 60, 45);
+      // Grand Center Arches
+      ctx.fillStyle = '#1c1917';
+      ctx.fillRect(x + 32, y + 42, 26, 28);
+      ctx.fillRect(x + 25, y + 32, 40, 6);
+      // 4 Minarets (Front 2 and Back 2)
+      ctx.fillStyle = '#e7e5e4';
+      ctx.fillRect(x + 8, y - 25, 12, 95);
+      ctx.fillRect(x + 70, y - 25, 12, 95);
+      // Minaret Domes & Balconies
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(x + 6, y - 32, 16, 8);
+      ctx.fillRect(x + 68, y - 32, 16, 8);
+      ctx.fillStyle = '#a8a29e';
+      ctx.fillRect(x + 5, y + 5, 18, 5);
+      ctx.fillRect(x + 67, y + 5, 18, 5);
+    }
+
+    // ERA 2: GOLCONDA FORT
+    function drawGolcondaFort(ctx, x, y) {
+      // Hill Fortress Foundation
+      ctx.fillStyle = '#57534e';
+      ctx.fillRect(x, y + 20, 110, 35);
+      // Citadel Ramparts & Battlements
+      ctx.fillStyle = '#78716c';
+      ctx.fillRect(x + 15, y, 80, 25);
+      // Tooth Battlements
+      for(let i=0; i<6; i++) {
+        ctx.fillRect(x + 18 + i*12, y - 8, 6, 8);
+      }
+      // Arch Gate
+      ctx.fillStyle = '#1c1917';
+      ctx.fillRect(x + 45, y + 30, 20, 25);
+    }
+
+    // ERA 3: GUN PARK AMARA VEERULA STUPAM
+    function drawGunParkStupam(ctx, x, y) {
+      // Black Granite Base
+      ctx.fillStyle = '#18181b';
+      ctx.fillRect(x + 20, y + 35, 40, 25);
+      ctx.fillStyle = '#3f3f46';
+      ctx.fillRect(x + 25, y + 25, 30, 10);
+      // Red & Gold Memorial Pillar
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(x + 33, y - 20, 14, 45);
+      // Flame / Star at Peak
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.arc(x + 40, y - 25, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(x + 38, y - 27, 4, 4);
+    }
+
+    // ERA 3: OSMANIA UNIVERSITY ARTS COLLEGE
+    function drawOUBuilding(ctx, x, y) {
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(x, y, 120, 65);
+      ctx.fillStyle = '#92400e';
+      ctx.fillRect(x + 40, y - 20, 40, 85); // Central Dome Tower
+      // Arched Windows
+      ctx.fillStyle = '#1e1b4b';
+      for(let i=0; i<3; i++) {
+        ctx.fillRect(x + 10 + i*35, y + 20, 15, 25);
+      }
+    }
+
+    // ERA 4: DR. B.R. AMBEDKAR TELANGANA SECRETARIAT
+    function drawTelanganaSecretariat(ctx, x, y) {
+      // Main Grand White Facade
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(x, y + 10, 125, 50);
+      // Pillars
+      ctx.fillStyle = '#cbd5e1';
+      for(let i=0; i<8; i++) {
+        ctx.fillRect(x + 8 + i*14, y + 22, 6, 38);
+      }
+      // Domes with Golden Kalasa
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillRect(x + 42, y - 18, 40, 30);
+      ctx.fillStyle = '#eab308'; // Golden Dome
+      ctx.beginPath();
+      ctx.arc(x + 62, y - 18, 16, Math.PI, 0);
+      ctx.fill();
+      ctx.fillRect(x + 60, y - 38, 4, 8); // Top Spike
+    }
+
+    // ERA 4: HUSSAIN SAGAR MONOLITHIC BUDDHA STATUE
+    function drawBuddhaStatue(ctx, x, y) {
+      // Water Ripple Base
+      ctx.fillStyle = '#0284c7';
+      ctx.fillRect(x, y + 45, 60, 15);
+      // Lotus Pedestal
+      ctx.fillStyle = '#f43f5e';
+      ctx.fillRect(x + 10, y + 32, 40, 14);
+      // Monolithic Stone Buddha
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(x + 22, y - 15, 16, 48); // Body
+      ctx.fillRect(x + 24, y - 30, 12, 15); // Head
+      // Halo Ring
+      ctx.strokeStyle = '#fef08a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x + 30, y - 23, 10, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // GAME STATE OBJECT
+    const state = {
+      lives: 3,
+      score: 0,
+      streak: 0,
+      marchersCount: 1,
+      currentQIndex: 0,
+      penPowerups: 2,
+      freezePowerups: 1,
+      fever: false,
+      timer: 20,
+      maxTimer: 20,
+      timerInterval: null,
+      answered: false,
+      activeQuestion: null,
+      correctAnswers: 0,
+      questionsAnswered: 0,
+      sessionQuestions: []
+    };
+
+    // Report the final result to the parent Mini App (Yantra IAS Daily Quiz) when embedded in an iframe
+    function reportGameOverToHost() {
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({
+            source: "yantra-game",
+            game: "telangana-express",
+            type: "gameOver",
+            score: state.score,
+            correct: state.correctAnswers,
+            questionsAnswered: state.questionsAnswered
+          }, "*");
+        }
+      } catch (e) {}
+    }
+
+    // DOM ELEMENTS
+    const elQNum = document.getElementById('q-number');
+    const elEraBadge = document.getElementById('era-badge');
+    const elQuestionText = document.getElementById('question-text');
+    const elOptionsContainer = document.getElementById('options-container');
+    const elTimerBar = document.getElementById('timer-bar');
+    const elScoreDisplay = document.getElementById('score-display');
+    const elLivesDisplay = document.getElementById('lives-display');
+    const elPenCount = document.getElementById('pen-count');
+    const elFreezeCount = document.getElementById('freeze-count');
+    const elFeverBanner = document.getElementById('fever-banner');
+    const elTrackName = document.getElementById('track-name');
+
+    /* ==========================================================================
+       RETRO CHIPTUNE AUDIO & BGM ENGINE (WEB AUDIO API)
+       ========================================================================== */
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+    let noiseBuffer = null;
+
+    // ERA TRACK METADATA
+    const ERA_TRACK_NAMES = [
+      "Era 1: Kakatiya Temple Bells",
+      "Era 2: Peasant Struggle Dappu",
+      "Era 3: 1969 Rally March",
+      "Era 4: Dhoom Dham Victory"
+    ];
+
+    // CHIPTUNE MELODY & BASS PATTERNS FOR ERAS (16-step patterns)
+    const ERA_MUSIC_PATTERNS = [
+      // Era 1: Kakatiya Classical / Temple Theme (Pentatonic Mohanam)
+      {
+        bpm: 108,
+        lead: [261, 0, 329, 392, 440, 0, 523, 392, 329, 0, 440, 523, 659, 523, 440, 392],
+        bass: [130, 0, 130, 0, 164, 0, 196, 0, 130, 0, 130, 0, 196, 0, 164, 0],
+        leadWave: 'square',
+        bassWave: 'triangle',
+        drumStyle: 'bells'
+      },
+      // Era 2: Nizam Era & Peasant Struggle (Resolute Minor & Heavy Dappu Beat)
+      {
+        bpm: 122,
+        lead: [220, 220, 261, 293, 329, 0, 293, 261, 220, 220, 392, 329, 293, 0, 261, 220],
+        bass: [110, 110, 0, 110, 110, 0, 110, 0, 110, 110, 0, 110, 110, 0, 110, 0],
+        leadWave: 'sawtooth',
+        bassWave: 'square',
+        drumStyle: 'dappu'
+      },
+      // Era 3: 1969 Movement (Upbeat Student Marching Cadence)
+      {
+        bpm: 132,
+        lead: [261, 293, 329, 261, 392, 392, 349, 329, 293, 329, 349, 392, 523, 440, 392, 349],
+        bass: [130, 0, 130, 130, 196, 0, 196, 196, 130, 0, 130, 130, 174, 0, 196, 0],
+        leadWave: 'square',
+        bassWave: 'triangle',
+        drumStyle: 'march'
+      },
+      // Era 4: 2001-2014 Modern Statehood (Triumphant Dhoom Dham Fanfare)
+      {
+        bpm: 140,
+        lead: [392, 440, 493, 587, 659, 587, 493, 440, 392, 587, 659, 784, 659, 587, 493, 392],
+        bass: [196, 196, 0, 196, 246, 246, 0, 246, 196, 196, 0, 196, 293, 293, 0, 293],
+        leadWave: 'square',
+        bassWave: 'sawtooth',
+        drumStyle: 'dhoom'
+      }
+    ];
+
+    const soundEngine = {
+      enabled: true,
+      bgmInterval: null,
+      bgmStep: 0,
+      currentEraTrack: -1,
+
+      init() {
+        if (!audioCtx) {
+          audioCtx = new AudioContext();
+          // Create Noise Buffer for Percussion
+          const bufferSize = audioCtx.sampleRate * 0.1;
+          noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+          const output = noiseBuffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            output[i] = Math.random() * 2 - 1;
+          }
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+      },
+
+      playTone(freq, type, duration) {
+        if (!this.enabled) return;
+        this.init();
+        try {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + duration);
+        } catch(e) {}
+      },
+
+      playCorrect() {
+        this.playTone(523.25, 'sine', 0.15);
+        setTimeout(() => this.playTone(659.25, 'sine', 0.25), 100);
+      },
+      playWrong() {
+        this.playTone(220, 'sawtooth', 0.2);
+        setTimeout(() => this.playTone(174.61, 'sawtooth', 0.3), 150);
+      },
+      playPowerup() {
+        this.playTone(440, 'triangle', 0.1);
+        setTimeout(() => this.playTone(880, 'triangle', 0.2), 80);
+      },
+
+      /* CHIPTUNE BGM SEQUENCER */
+      startBGM() {
+        if (!this.enabled) return;
+        this.init();
+        if (this.bgmInterval) clearInterval(this.bgmInterval);
+
+        const eraIdx = getEraIndex();
+        this.currentEraTrack = eraIdx;
+        const pattern = ERA_MUSIC_PATTERNS[eraIdx];
+
+        if (elTrackName) elTrackName.textContent = ERA_TRACK_NAMES[eraIdx];
+
+        const stepTime = (60 / pattern.bpm / 4) * 1000; // 16th note interval
+
+        this.bgmInterval = setInterval(() => {
+          if (!this.enabled) return;
+          this.playBGMStep(pattern);
+          this.bgmStep = (this.bgmStep + 1) % 16;
+        }, stepTime);
+      },
+
+      stopBGM() {
+        if (this.bgmInterval) {
+          clearInterval(this.bgmInterval);
+          this.bgmInterval = null;
+        }
+      },
+
+      updateBgmEra() {
+        const eraIdx = getEraIndex();
+        if (eraIdx !== this.currentEraTrack && this.enabled) {
+          this.startBGM();
+        }
+      },
+
+      playBGMStep(pattern) {
+        if (!audioCtx || audioCtx.state !== 'running') return;
+        const now = audioCtx.currentTime;
+
+        // 1. Lead Melody Note
+        const leadFreq = pattern.lead[this.bgmStep];
+        if (leadFreq > 0) {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = pattern.leadWave;
+          osc.frequency.setValueAtTime(leadFreq, now);
+          gain.gain.setValueAtTime(0.04, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.12);
+        }
+
+        // 2. Bassline Note
+        const bassFreq = pattern.bass[this.bgmStep];
+        if (bassFreq > 0) {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = pattern.bassWave;
+          osc.frequency.setValueAtTime(bassFreq, now);
+          gain.gain.setValueAtTime(0.05, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.18);
+        }
+
+        // 3. Traditional Dappu / Drum Beats
+        this.playDrumStep(pattern.drumStyle, this.bgmStep, now);
+      },
+
+      playDrumStep(style, step, now) {
+        // Heavy Pitch-Drop Dappu Bass Drum
+        const playDappuHit = (accent = false) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(accent ? 160 : 130, now);
+          osc.frequency.exponentialRampToValueAtTime(35, now + 0.09);
+          gain.gain.setValueAtTime(accent ? 0.09 : 0.06, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.09);
+        };
+
+        // Snare / Noise Click
+        const playNoiseHit = (volume = 0.02) => {
+          if (!noiseBuffer) return;
+          const noise = audioCtx.createBufferSource();
+          const gain = audioCtx.createGain();
+          noise.buffer = noiseBuffer;
+          gain.gain.setValueAtTime(volume, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+          noise.connect(gain);
+          gain.connect(audioCtx.destination);
+          noise.start(now);
+          noise.stop(now + 0.05);
+        };
+
+        if (style === 'dappu') {
+          // Syncopated Folk Dappu Rhythm
+          if ([0, 3, 6, 8, 10, 12, 14].includes(step)) playDappuHit(step === 0 || step === 8);
+          if (step % 2 === 1) playNoiseHit(0.015);
+        } else if (style === 'dhoom') {
+          // Energetic Dhoom Dham Beat
+          if ([0, 2, 4, 6, 8, 10, 12, 14].includes(step)) playDappuHit(true);
+          if (step % 4 === 2) playNoiseHit(0.03);
+        } else if (style === 'march') {
+          // Marching Snare Cadence
+          if (step % 4 === 0) playDappuHit(false);
+          if ([2, 6, 10, 12, 14, 15].includes(step)) playNoiseHit(0.025);
+        } else {
+          // Light Temple Bell / Tick
+          if (step % 4 === 0) playTone(880, 'triangle', 0.05);
+        }
+      }
+    };
+
+    // User Interaction Audio Resume Guard
+    window.addEventListener('click', () => soundEngine.init(), { once: true });
+    window.addEventListener('keydown', () => soundEngine.init(), { once: true });
+
+    // RENDER MARCHING PROCESSION IN CANVAS BASED ON HISTORICAL ERA
+    function drawMarchingProcession(ctx, groundY, scrollX) {
+      const currentEra = getEraIndex();
+
+      if (currentEra === 0) {
+        // ERA 1: Rani Rudrama Devi riding horseback leading Kakatiya charge
+        drawKakatiyaHorseCharge(ctx, groundY, scrollX);
+      } else if (currentEra === 1) {
+        // ERA 2: Nizam escaping in bullock cart while peasants chase
+        drawNizamBullockCartChase(ctx, groundY, scrollX);
+      } else {
+        // ERA 3 & 4: Telangana Movement Mass March with "JAI TELANGANA" Banners
+        drawTelanganaMovementMarch(ctx, groundY, scrollX);
+      }
+    }
+
+    // ERA 1: RANI RUDRAMA DEVI HORSE RIDE & CHARGE
+    function drawKakatiyaHorseCharge(ctx, groundY, scrollX) {
+      const w = canvas.width;
+      const raniX = 110;
+      const raniY = groundY - 45;
+
+      // 1. Fleeing enemy ahead
+      const fleeX = (w * 0.75 + Math.sin(scrollX * 0.05) * 20);
+      drawFleeingEnemy(ctx, fleeX, groundY - 32, scrollX);
+
+      // 2. Rani Rudrama Devi on Warhorse
+      drawRoyalWarhorse(ctx, raniX, raniY, scrollX);
+      drawRaniRudramaDevi(ctx, raniX + 10, raniY - 14, scrollX);
+
+      // 3. Kakatiya Soldiers following behind
+      const count = Math.min(10, state.marchersCount);
+      for (let i = 1; i < count; i++) {
+        const sx = raniX - (i * 32);
+        if (sx > -20) {
+          drawKakatiyaSoldier(ctx, sx, groundY - 32, scrollX, i);
+        }
+      }
+    }
+
+    function drawRoyalWarhorse(ctx, x, y, scrollX) {
+      const legAnim = Math.sin(scrollX * 0.2) * 6;
+      ctx.fillStyle = '#f8fafc'; // White Stallion
+      ctx.fillRect(x, y + 10, 36, 18); // Horse Body
+      ctx.fillRect(x + 26, y - 5, 12, 20); // Neck & Head
+      ctx.fillRect(x + 34, y - 10, 8, 8); // Snout
+      
+      // Royal Saddle & Armor
+      ctx.fillStyle = '#b91c1c';
+      ctx.fillRect(x + 10, y + 8, 16, 12);
+      ctx.fillStyle = '#eab308'; // Gold Trim
+      ctx.fillRect(x + 10, y + 18, 16, 3);
+
+      // Legs Galloping
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(x + 4, y + 28, 5, 16 + legAnim);
+      ctx.fillRect(x + 12, y + 28, 5, 16 - legAnim);
+      ctx.fillRect(x + 22, y + 28, 5, 16 - legAnim);
+      ctx.fillRect(x + 30, y + 28, 5, 16 + legAnim);
+    }
+
+    function drawRaniRudramaDevi(ctx, x, y, scrollX) {
+      const bodyBob = Math.abs(Math.sin(scrollX * 0.2)) * 2;
+      const ry = y - bodyBob;
+
+      // Crown & Face
+      ctx.fillStyle = '#eab308'; // Gold Crown
+      ctx.fillRect(x + 2, ry - 8, 8, 4);
+      ctx.fillStyle = '#fca5a5'; // Face
+      ctx.fillRect(x + 2, ry - 4, 8, 7);
+
+      // Saree / Armor
+      ctx.fillStyle = '#dc2626'; // Royal Red Saree
+      ctx.fillRect(x, ry + 3, 12, 14);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(x + 2, ry + 5, 8, 4); // Chest Armor Plate
+
+      // Brandishing Sword pointing forward
+      ctx.fillStyle = '#e2e8f0'; // Sword blade
+      ctx.fillRect(x + 12, ry - 6, 20, 3);
+      ctx.fillRect(x + 30, ry - 8, 3, 7); // Blade tip
+      ctx.fillStyle = '#b45309'; // Hilt
+      ctx.fillRect(x + 10, ry - 2, 4, 4);
+    }
+
+    function drawKakatiyaSoldier(ctx, x, y, scrollX, idx) {
+      const walk = Math.sin(scrollX * 0.15 + idx) * 3;
+      ctx.fillStyle = '#fca5a5';
+      ctx.fillRect(x + 4, y + walk, 8, 8); // Head
+      ctx.fillStyle = '#15803d'; // Green Tunic
+      ctx.fillRect(x + 2, y + 8 + walk, 12, 12);
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(x + 3, y + 20 + walk, 4, 10);
+      ctx.fillRect(x + 9, y + 20 - walk, 4, 10);
+
+      // Spear & Shield
+      ctx.fillStyle = '#78350f'; // Spear shaft
+      ctx.fillRect(x + 14, y - 10 + walk, 2, 32);
+      ctx.fillStyle = '#e2e8f0'; // Spear tip
+      ctx.fillRect(x + 13, y - 14 + walk, 4, 5);
+
+      ctx.fillStyle = '#b45309'; // Round Shield
+      ctx.beginPath();
+      ctx.arc(x, y + 14 + walk, 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawFleeingEnemy(ctx, x, y, scrollX) {
+      const run = Math.sin(scrollX * 0.3) * 4;
+      ctx.fillStyle = '#fca5a5';
+      ctx.fillRect(x + 4, y + run, 8, 8);
+      ctx.fillStyle = '#475569'; // Enemy Dark Uniform
+      ctx.fillRect(x + 2, y + 8 + run, 12, 12);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(x + 1, y + 20 + run, 4, 10);
+      ctx.fillRect(x + 9, y + 20 - run, 4, 10);
+    }
+
+    // ERA 2: NIZAM ESCAPING IN BULLOCK CART CHASED BY PEASANTS
+    function drawNizamBullockCartChase(ctx, groundY, scrollX) {
+      const w = canvas.width;
+      
+      // 1. Escaping Bullock Cart with Nizam ahead on right
+      const cartX = Math.min(w - 180, w * 0.55 + Math.sin(scrollX * 0.08) * 15);
+      drawBullockCartWithNizam(ctx, cartX, groundY - 38, scrollX);
+
+      // 2. Chasing Peasant Revolutionaries behind on left
+      const count = Math.min(12, state.marchersCount);
+      for (let i = 0; i < count; i++) {
+        const px = 40 + (i * 26);
+        if (px < cartX - 35) {
+          drawChasingPeasant(ctx, px, groundY - 32, scrollX, i);
+        }
+      }
+    }
+
+    function drawBullockCartWithNizam(ctx, x, y, scrollX) {
+      const wheelRot = scrollX * 0.1;
+
+      // Wooden Cart Body
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(x + 20, y + 10, 50, 16);
+      ctx.fillRect(x + 15, y + 4, 5, 20); // Front panel
+      ctx.fillRect(x + 68, y + 4, 5, 20); // Back panel
+
+      // Two Wooden Spoke Wheels
+      drawCartWheel(ctx, x + 30, y + 26, wheelRot);
+      drawCartWheel(ctx, x + 60, y + 26, wheelRot);
+
+      // Bullocks / Oxen pulling
+      const oxLeg = Math.sin(scrollX * 0.2) * 4;
+      ctx.fillStyle = '#e2e8f0'; // White Bullock Body
+      ctx.fillRect(x + 80, y + 8, 30, 16);
+      ctx.fillRect(x + 100, y - 2, 12, 14); // Head & Hump
+      ctx.fillStyle = '#475569'; // Horns
+      ctx.fillRect(x + 108, y - 8, 3, 8);
+
+      // Bullock Legs
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(x + 82, y + 24, 4, 12 + oxLeg);
+      ctx.fillRect(x + 90, y + 24, 4, 12 - oxLeg);
+      ctx.fillRect(x + 100, y + 24, 4, 12 - oxLeg);
+      ctx.fillRect(x + 106, y + 24, 4, 12 + oxLeg);
+
+      // Connecting Wooden Yoke
+      ctx.fillStyle = '#b45309';
+      ctx.fillRect(x + 65, y + 16, 25, 4);
+
+      // PANICKING NIZAM IN THE CART
+      const panicBob = Math.sin(scrollX * 0.25) * 3;
+      // Nizam Fez Cap
+      ctx.fillStyle = '#dc2626'; // Red Fez
+      ctx.fillRect(x + 38, y - 10 + panicBob, 10, 8);
+      ctx.fillStyle = '#1e293b'; // Black Tassel
+      ctx.fillRect(x + 46, y - 6 + panicBob, 4, 3);
+      // Face looking back in fear
+      ctx.fillStyle = '#fde047';
+      ctx.fillRect(x + 36, y - 2 + panicBob, 12, 8);
+      // Royal Sherwani
+      ctx.fillStyle = '#4c1d95'; // Purple Gold-trimmed Sherwani
+      ctx.fillRect(x + 34, y + 6 + panicBob, 16, 12);
+
+      // Sacks of Gold Treasure in Cart
+      ctx.fillStyle = '#d97706';
+      ctx.beginPath();
+      ctx.arc(x + 25, y + 10, 6, 0, Math.PI * 2);
+      ctx.arc(x + 56, y + 10, 7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawCartWheel(ctx, x, y, rot) {
+      ctx.strokeStyle = '#b45309';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(x, y, 10, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#78350f';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x - 9 * Math.cos(rot), y - 9 * Math.sin(rot));
+      ctx.lineTo(x + 9 * Math.cos(rot), y + 9 * Math.sin(rot));
+      ctx.moveTo(x - 9 * Math.sin(rot), y + 9 * Math.cos(rot));
+      ctx.lineTo(x + 9 * Math.sin(rot), y - 9 * Math.cos(rot));
+      ctx.stroke();
+    }
+
+    function drawChasingPeasant(ctx, x, y, scrollX, idx) {
+      const runAnim = Math.sin(scrollX * 0.25 + idx) * 4;
+      ctx.fillStyle = '#fca5a5';
+      ctx.fillRect(x + 4, y + runAnim, 8, 8); // Head
+      
+      // Simple Peasant Kurta / Clothes
+      const shirtColors = ['#ea580c', '#0284c7', '#16a34a', '#ca8a04', '#dc2626'];
+      ctx.fillStyle = shirtColors[idx % shirtColors.length];
+      ctx.fillRect(x + 2, y + 8 + runAnim, 12, 12);
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(x + 1, y + 20 + runAnim, 5, 10);
+      ctx.fillRect(x + 8, y + 20 - runAnim, 5, 10);
+
+      // Raising Sticks / Torches / Red Flags chasing
+      if (idx % 3 === 0) {
+        // Torch
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(x + 13, y - 6 + runAnim, 3, 20);
+        ctx.fillStyle = '#f59e0b'; // Fire
+        ctx.fillRect(x + 11, y - 12 + runAnim, 7, 7);
+      } else if (idx % 3 === 1) {
+        // Wooden Lathi / Stick
+        ctx.fillStyle = '#b45309';
+        ctx.fillRect(x + 12, y - 8 + runAnim, 3, 22);
+      } else {
+        // Flag
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(x + 13, y - 10 + runAnim, 2, 26);
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(x + 15, y - 10 + runAnim, 14, 10);
+      }
+    }
+
+    // ERA 3 & 4: TELANGANA MOVEMENT MASS MARCH WITH "JAI TELANGANA" BANNERS
+    function drawTelanganaMovementMarch(ctx, groundY, scrollX) {
+      const startX = 70;
+      const total = Math.min(12, state.marchersCount);
+
+      // 1. Lead Banner Carriers holding huge "JAI TELANGANA" Banner
+      drawBannerHolders(ctx, startX, groundY - 32, scrollX);
+
+      // 2. Dappu Drummers behind lead banner
+      if (total >= 3) {
+        drawMovementDrummer(ctx, startX - 55, groundY - 32, scrollX);
+      }
+
+      // 3. Procession of Marchers carrying flags & placards
+      for (let i = 3; i < total; i++) {
+        const mx = startX - 55 - ((i - 2) * 28);
+        if (mx > -25) {
+          drawMovementMarcher(ctx, mx, groundY - 32, scrollX, i);
+        }
+      }
+    }
+
+    function drawBannerHolders(ctx, x, y, scrollX) {
+      const bob = Math.sin(scrollX * 0.15) * 2;
+      const by = y + bob;
+
+      // Left Holder
+      drawPixelHuman(ctx, x - 10, by, '#ec4899', false, false);
+      // Right Holder
+      drawPixelHuman(ctx, x + 65, by, '#0284c7', false, false);
+
+      // WIDE "JAI TELANGANA" BANNER
+      ctx.fillStyle = '#fef08a'; // Bright Yellow Banner Cloth
+      ctx.fillRect(x + 2, by - 16, 70, 20);
+      ctx.strokeStyle = '#eab308';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x + 2, by - 16, 70, 20);
+
+      // Banner Poles
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(x + 2, by - 22, 3, 34);
+      ctx.fillRect(x + 69, by - 22, 3, 34);
+
+      // Bold Text: "JAI TELANGANA"
+      ctx.fillStyle = '#db2777'; // Telangana Movement Pink/Red
+      ctx.font = 'bold 9px "Press Start 2P"';
+      ctx.fillText('JAI TS', x + 12, y + 2);
+    }
+
+    function drawMovementDrummer(ctx, x, y, scrollX) {
+      const walk = Math.sin(scrollX * 0.15) * 2;
+      drawPixelHuman(ctx, x, y, '#eab308', false, true); // Yellow shirt drummer
+    }
+
+    function drawMovementMarcher(ctx, x, y, scrollX, idx) {
+      const walk = Math.sin(scrollX * 0.15 + idx) * 2;
+      const shirtColors = ['#db2777', '#0284c7', '#16a34a', '#eab308', '#9333ea'];
+      drawPixelHuman(ctx, x, y, shirtColors[idx % shirtColors.length], false, false);
+
+      // Waving Pink Telangana Movement Flag or Placard
+      if (idx % 2 === 0) {
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(x + 12, y - 16 + walk, 2, 28);
+        ctx.fillStyle = '#ec4899'; // Telangana Movement Pink Flag
+        ctx.fillRect(x + 14, y - 16 + walk, 16, 10);
+      } else {
+        // Placard
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(x + 12, y - 14 + walk, 2, 26);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x + 4, y - 20 + walk, 18, 10);
+        ctx.fillStyle = '#0f172a';
+        ctx.font = '6px "Press Start 2P"';
+        ctx.fillText('1969', x + 5, y - 12 + walk);
+      }
+    }
+
+    function drawPixelHuman(ctx, x, y, shirtColor, holdsBanner = false, isDrummer = false) {
+      const walk = Math.sin(scrollX * 0.18 + x) * 2.5;
+
+      // Head / Face
+      ctx.fillStyle = '#fca5a5';
+      ctx.fillRect(x + 4, y + walk, 8, 8);
+
+      // Hair or Cap
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(x + 3, y - 2 + walk, 10, 4);
+
+      // Torso / Shirt
+      ctx.fillStyle = shirtColor;
+      ctx.fillRect(x + 2, y + 8 + walk, 12, 12);
+
+      // Legs / Pants
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(x + 3, y + 20 + walk, 4, 10);
+      ctx.fillRect(x + 9, y + 20 - walk, 4, 10);
+
+      // Drummer Dappu Instrument
+      if (isDrummer) {
+        ctx.fillStyle = '#b45309';
+        ctx.beginPath();
+        ctx.arc(x + 16, y + 14 + walk, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#fef08a';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(x + 12, y + 8 + walk, 6, 2);
+      }
+    }
+
+    function updateHUD() {
+      elScoreDisplay.textContent = String(state.score).padStart(6, '0');
+      
+      let hearts = '';
+      for (let i = 0; i < 3; i++) {
+        hearts += (i < state.lives) ? '❤️' : '🖤';
+      }
+      elLivesDisplay.textContent = hearts;
+
+      elPenCount.textContent = `(${state.penPowerups})`;
+      elFreezeCount.textContent = `(${state.freezePowerups})`;
+
+      document.getElementById('btn-powerup-pen').disabled = state.penPowerups <= 0 || state.answered;
+      document.getElementById('btn-powerup-freeze').disabled = state.freezePowerups <= 0 || state.answered;
+
+      if (state.streak >= 3 && !state.fever) {
+        state.fever = true;
+        elFeverBanner.classList.remove('hidden');
+      } else if (state.streak < 3 && state.fever) {
+        state.fever = false;
+        elFeverBanner.classList.add('hidden');
+      }
+    }
+
+    function loadQuestion() {
+      if (state.currentQIndex >= state.sessionQuestions.length) {
+        state.currentQIndex = 0;
+      }
+
+      state.answered = false;
+      state.activeQuestion = state.sessionQuestions[state.currentQIndex];
+
+      elQNum.textContent = state.currentQIndex + 1;
+      elEraBadge.textContent = state.activeQuestion.eraName;
+      elQuestionText.textContent = state.activeQuestion.question;
+
+      elOptionsContainer.innerHTML = '';
+      state.activeQuestion.options.forEach((optText, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'pixel-btn bg-slate-800 hover:bg-slate-700 text-slate-100 p-3 rounded text-left text-sm sm:text-base transition font-sans font-medium flex items-center gap-2 border-2 border-indigo-900';
+        btn.dataset.index = idx;
+        
+        const optionLabel = document.createElement('span');
+        optionLabel.className = 'font-pixel text-yellow-400 text-xs px-2 py-1 bg-slate-950 rounded border border-purple-800 shrink-0';
+        optionLabel.textContent = String.fromCharCode(65 + idx);
+        
+        const textSpan = document.createElement('span');
+        textSpan.textContent = optText;
+
+        btn.appendChild(optionLabel);
+        btn.appendChild(textSpan);
+
+        btn.addEventListener('click', () => handleAnswer(idx));
+        elOptionsContainer.appendChild(btn);
+      });
+
+      updateHUD();
+      soundEngine.updateBgmEra();
+
+      state.timer = state.maxTimer;
+      updateTimerBar();
+      if (state.timerInterval) clearInterval(state.timerInterval);
+      state.timerInterval = setInterval(() => {
+        state.timer -= 0.1;
+        updateTimerBar();
+        if (state.timer <= 0) {
+          clearInterval(state.timerInterval);
+          handleTimeout();
+        }
+      }, 100);
+    }
+
+    function updateTimerBar() {
+      const pct = Math.max(0, (state.timer / state.maxTimer) * 100);
+      elTimerBar.style.width = pct + '%';
+      if (pct > 50) {
+        elTimerBar.className = 'h-full bg-emerald-400 rounded-full transition-all duration-100';
+      } else if (pct > 25) {
+        elTimerBar.className = 'h-full bg-amber-400 rounded-full transition-all duration-100';
+      } else {
+        elTimerBar.className = 'h-full bg-red-500 rounded-full transition-all duration-100';
+      }
+    }
+
+    function handleAnswer(selectedIndex) {
+      if (state.answered) return;
+      state.answered = true;
+      if (state.timerInterval) clearInterval(state.timerInterval);
+
+      const q = state.activeQuestion;
+      const isCorrect = selectedIndex === q.answer;
+      state.questionsAnswered++;
+      const buttons = elOptionsContainer.querySelectorAll('button');
+
+      buttons.forEach((btn, idx) => {
+        btn.disabled = true;
+        if (idx === q.answer) {
+          btn.classList.remove('bg-slate-800', 'hover:bg-slate-700');
+          btn.classList.add('bg-emerald-700', 'border-emerald-400', 'text-white');
+        } else if (idx === selectedIndex && !isCorrect) {
+          btn.classList.remove('bg-slate-800', 'hover:bg-slate-700');
+          btn.classList.add('bg-red-700', 'border-red-400', 'text-white');
+        }
+      });
+
+      const fbModal = document.getElementById('modal-feedback');
+      const fbTitle = document.getElementById('feedback-title');
+      const fbText = document.getElementById('feedback-text');
+
+      if (isCorrect) {
+        soundEngine.playCorrect();
+        const timeBonus = Math.floor(state.timer * 10);
+        const addedScore = (100 + timeBonus) * (state.fever ? 2 : 1);
+        state.score += addedScore;
+        state.streak++;
+        state.correctAnswers++;
+        state.marchersCount = Math.min(12, state.marchersCount + 1);
+
+        fbTitle.textContent = "✓ CORRECT! (+ " + addedScore + " PTS)";
+        fbTitle.className = "font-pixel text-lg text-emerald-400";
+      } else {
+        soundEngine.playWrong();
+        state.lives--;
+        state.streak = 0;
+        state.fever = false;
+        state.marchersCount = Math.max(1, state.marchersCount - 1);
+
+        fbTitle.textContent = "✗ INCORRECT!";
+        fbTitle.className = "font-pixel text-lg text-red-500";
+      }
+
+      fbText.innerHTML = `<p class="mb-2 font-semibold text-amber-300">Explanation:</p><p class="text-sm leading-relaxed">${q.explanation}</p>`;
+      updateHUD();
+
+      setTimeout(() => {
+        fbModal.classList.remove('hidden');
+      }, 500);
+    }
+
+    function handleTimeout() {
+      if (state.answered) return;
+      state.answered = true;
+      state.questionsAnswered++;
+      soundEngine.playWrong();
+
+      const q = state.activeQuestion;
+      const buttons = elOptionsContainer.querySelectorAll('button');
+      buttons.forEach((btn, idx) => {
+        btn.disabled = true;
+        if (idx === q.answer) {
+          btn.classList.remove('bg-slate-800', 'hover:bg-slate-700');
+          btn.classList.add('bg-emerald-700', 'border-emerald-400', 'text-white');
+        }
+      });
+
+      state.lives--;
+      state.streak = 0;
+      state.fever = false;
+      state.marchersCount = Math.max(1, state.marchersCount - 1);
+      updateHUD();
+
+      const fbModal = document.getElementById('modal-feedback');
+      const fbTitle = document.getElementById('feedback-title');
+      const fbText = document.getElementById('feedback-text');
+
+      fbTitle.textContent = "⏱️ TIME EXPIRED!";
+      fbTitle.className = "font-pixel text-lg text-amber-500";
+      fbText.innerHTML = `<p class="mb-2 font-semibold text-amber-300">Explanation:</p><p class="text-sm leading-relaxed">${q.explanation}</p>`;
+
+      setTimeout(() => {
+        fbModal.classList.remove('hidden');
+      }, 500);
+    }
+
+    document.getElementById('btn-next-q').addEventListener('click', () => {
+      document.getElementById('modal-feedback').classList.add('hidden');
+      if (state.lives <= 0) {
+        gameOver();
+      } else {
+        state.currentQIndex++;
+        loadQuestion();
+      }
+    });
+
+    document.getElementById('btn-powerup-pen').addEventListener('click', () => {
+      if (state.penPowerups <= 0 || state.answered) return;
+      state.penPowerups--;
+      soundEngine.playPowerup();
+
+      const q = state.activeQuestion;
+      const buttons = Array.from(elOptionsContainer.querySelectorAll('button'));
+      const wrongIndices = buttons
+        .map((_, i) => i)
+        .filter(i => i !== q.answer);
+
+      wrongIndices.sort(() => Math.random() - 0.5);
+      const toRemove = wrongIndices.slice(0, 2);
+
+      toRemove.forEach(idx => {
+        buttons[idx].style.opacity = '0.25';
+        buttons[idx].disabled = true;
+        buttons[idx].classList.add('cursor-not-allowed', 'line-through');
+      });
+
+      updateHUD();
+    });
+
+    document.getElementById('btn-powerup-freeze').addEventListener('click', () => {
+      if (state.freezePowerups <= 0 || state.answered) return;
+      state.freezePowerups--;
+      soundEngine.playPowerup();
+
+      state.timer += 10;
+      state.maxTimer += 5;
+      updateTimerBar();
+      updateHUD();
+    });
+
+    document.getElementById('btn-audio').addEventListener('click', () => {
+      soundEngine.enabled = !soundEngine.enabled;
+      document.getElementById('btn-audio').textContent = soundEngine.enabled ? '🔊' : '🔇';
+      if (soundEngine.enabled) {
+        soundEngine.startBGM();
+      } else {
+        soundEngine.stopBGM();
+      }
+    });
+
+    function gameOver() {
+      soundEngine.stopBGM();
+      const modal = document.getElementById('modal-gameover');
+      document.getElementById('final-score').textContent = state.score;
+
+      let rank = "Veera Yatri";
+      if (state.score > 3000) rank = "Telangana Ratna ⭐";
+      else if (state.score > 2000) rank = "Samskrutika Yodha 🗡️";
+      else if (state.score > 1000) rank = "Praja Porata Nayakudu 🚩";
+
+      document.getElementById('final-rank').textContent = rank;
+      modal.classList.remove('hidden');
+      reportGameOverToHost();
+    }
+
+    function resetGame() {
+      state.lives = 3;
+      state.score = 0;
+      state.streak = 0;
+      state.marchersCount = 1;
+      state.currentQIndex = 0;
+      state.penPowerups = 2;
+      state.freezePowerups = 1;
+      state.fever = false;
+      state.correctAnswers = 0;
+      state.questionsAnswered = 0;
+      state.sessionQuestions = buildSessionQuestions();
+
+      document.getElementById('modal-start').classList.add('hidden');
+      document.getElementById('modal-gameover').classList.add('hidden');
+      document.getElementById('modal-feedback').classList.add('hidden');
+
+      soundEngine.startBGM();
+      loadQuestion();
+    }
+
+    document.getElementById('btn-start-game').addEventListener('click', () => {
+      resetGame();
+    });
+
+    document.getElementById('btn-restart').addEventListener('click', () => {
+      resetGame();
+    });
+
+    // Start animation loop
+    drawGameScene();
+  </script>
+</body>
+</html>
