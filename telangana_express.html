@@ -1390,6 +1390,14 @@
       return copy;
     }
 
+    // Randomises an option's display order (and tracks the correct answer's new
+    // slot) every time a question is shown, so the correct choice isn't always A.
+    function shuffleQuestionOptions(q) {
+      const order = shuffleArray(q.options.map((_, i) => i));
+      q.options = order.map(i => q.options[i]);
+      q.answer = order.indexOf(q.answer);
+    }
+
     function buildSessionQuestions() {
       const session = [];
       for (let era = 0; era < ERA_COUNT; era++) {
@@ -2299,6 +2307,7 @@
 
       state.answered = false;
       state.activeQuestion = state.sessionQuestions[state.currentQIndex];
+      shuffleQuestionOptions(state.activeQuestion);
 
       elQNum.textContent = state.currentQIndex + 1;
       elEraBadge.textContent = state.activeQuestion.eraName;
