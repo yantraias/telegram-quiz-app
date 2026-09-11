@@ -159,6 +159,7 @@
 
         <button style="margin-top:20px;" onclick="startQuiz()">🚀 Start Quiz</button>
         <button class="success" onclick="showLeaderboard()">🏆 View Leaderboard</button>
+        <button class="ghost" onclick="playGame()">🎮 Play Telangana Express</button>
         <button id="invite-btn" class="ghost hidden" onclick="inviteFriends()">👥 Invite Friends</button>
         <a class="channel-link" href="#" onclick="openChannel(); return false;">📢 Visit @yantraias channel</a>
     </div>
@@ -205,6 +206,17 @@
         </div>
         <div id="leaderboard-list">Loading…</div>
         <button style="margin-top:20px;" class="secondary" onclick="showSetup()">⬅️ Back to Menu</button>
+    </div>
+
+    <!-- SCREEN 6: GAME -->
+    <div id="game-screen" class="hidden">
+        <div class="card center" style="margin-bottom:10px; padding:14px;">
+            <button class="secondary" style="margin-top:0;" onclick="exitGame()">⬅️ Back to Menu</button>
+        </div>
+        <div style="border-radius:16px; overflow:hidden; box-shadow:0 12px 30px rgba(30,20,80,0.25); line-height:0;">
+            <iframe id="game-iframe" src="" title="Telangana Express Game" style="width:100%; height:72vh; min-height:520px; border:0; display:block; background:#0d0f18;"></iframe>
+        </div>
+        <p class="muted center" id="game-status" style="margin-top:10px;"></p>
     </div>
 
 </div>
@@ -301,8 +313,54 @@
         }
 
         function screen(id) {
-            ["loading-screen", "join-screen", "setup-screen", "quiz-screen", "result-screen", "leaderboard-screen"]
+            ["loading-screen", "join-screen", "setup-screen", "quiz-screen", "result-screen", "leaderboard-screen", "game-screen"]
                 .forEach(s => document.getElementById(s).classList.toggle("hidden", s !== id));
+        }
+
+        const GAME_URL = "telangana_express.html";
+
+        function playGame() {
+            const iframe = document.getElementById("game-iframe");
+            iframe.src = GAME_URL + "?t=" + Date.now();
+            document.getElementById("game-status").innerText = "";
+            screen("game-screen");
+        }
+
+        function exitGame() {
+            document.getElementById("game-iframe").src = "about:blank";
+            screen("setup-screen");
+        }
+
+        window.addEventListener("message", function (event) {
+            const data = event.data;
+            if (!data || data.source !== "yantra-game" || data.type !== "gameOver") return;
+            handleGameOver(data);
+        });
+
+        async function handleGameOver(data) {
+            const correct = Math.max(0, parseInt(data.correct, 10) || 0);
+            const played = Math.max(1, parseInt(data.questionsAnswered, 10) || 1);
+            const percent = Math.round((correct / played) * 100);
+            const gamePoints = parseInt(data.score, 10) || 0;
+
+            saveAttempt("🎮 Telangana Express (Game)", correct, played, percent);
+            bumpStreak();
+
+            const statusEl = document.getElementById("game-status");
+            if (tg && tg.initData) {
+                try {
+                    await callApi({ action: "submitScore", initData: tg.initData, score: correct });
+                    statusEl.innerText = `✅ Saved: ${correct}/${played} correct · ${gamePoints} game points`;
+                } catch (e) {
+                    statusEl.innerText = "⚠️ Couldn't save your score — check your connection.";
+                }
+            } else {
+                statusEl.innerText = `Game over! ${correct}/${played} correct · ${gamePoints} points. Open via Telegram to save your score.`;
+            }
+
+            if (tg && tg.HapticFeedback) {
+                tg.HapticFeedback.notificationOccurred(percent >= 50 ? "success" : "warning");
+            }
         }
 
         let redirectCountdownTimer = null;
